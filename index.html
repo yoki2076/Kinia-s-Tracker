@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Trip App ✈️</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: #F0EBE3;
+  min-height: 100vh;
+  display: flex; justify-content: center;
+}
+#app {
+  width: 100%; max-width: 430px; min-height: 100vh;
+  background: #F7F3EE;
+  position: relative;
+  box-shadow: 0 0 40px #00000014;
+  padding-bottom: 40px;
+}
+
+/* HERO */
+.hero {
+  background: linear-gradient(160deg, #6B4428 0%, #8B5E3C 60%, #A07050 100%);
+  padding: 64px 24px 36px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 60%);
+}
+.hero-emoji { font-size: 52px; margin-bottom: 12px; display: block; }
+.hero-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px; font-weight: 600;
+  color: #fff; letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+.hero-sub {
+  font-size: 12px; color: rgba(255,255,255,0.75);
+  letter-spacing: 3px; font-weight: 500;
+}
+.hero-user {
+  margin-top: 20px; display: flex; align-items: center;
+  justify-content: center; gap: 10px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 30px; padding: 8px 16px;
+  display: none;
+}
+.hero-user.show { display: flex; }
+.hero-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.5);
+  object-fit: cover;
+}
+.hero-avatar-placeholder {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  color: #fff; font-weight: 700; font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+.hero-name { color: #fff; font-size: 13px; font-weight: 500; }
+
+/* SECTION */
+.section { padding: 20px 16px 0; }
+.section-title {
+  font-size: 11px; color: #8B5E3C;
+  letter-spacing: 2px; font-weight: 700;
+  margin-bottom: 12px;
+}
+
+/* GRID */
+.apps-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.app-card {
+  background: #fff;
+  border: 1px solid #DDD4C6;
+  border-radius: 16px;
+  padding: 18px 16px;
+  text-decoration: none;
+  display: block;
+  transition: all 0.18s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.app-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+.app-card:active { transform: scale(0.97); }
+.app-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+.app-name {
+  font-size: 14px; font-weight: 600;
+  color: #2C2016; margin-bottom: 3px;
+}
+.app-desc { font-size: 11px; color: #8B7060; line-height: 1.5; }
+
+/* SYNC STATUS */
+.sync-badge {
+  margin: 16px 16px 0;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12px; color: #16a34a;
+  display: none; align-items: center; gap: 8px;
+}
+.sync-badge.show { display: flex; }
+.sync-badge.offline { background: #fef9ec; border-color: #fcd34d; color: #92400e; }
+</style>
+</head>
+<body>
+<!-- 🔐 登入保護 + 導覽列 -->
+<script type="module" src="auth-guard.js"></script>
+
+<div id="app">
+  <div class="hero">
+    <span class="hero-emoji">✈️</span>
+    <div class="hero-title">Trip App</div>
+    <div class="hero-sub">YOUR TRAVEL COMPANION</div>
+    <div class="hero-user" id="hero-user">
+      <div class="hero-avatar-placeholder" id="hero-avatar-ph"></div>
+      <span class="hero-name" id="hero-name">歡迎回來</span>
+    </div>
+  </div>
+
+  <div id="sync-badge" class="sync-badge show">
+    ☁️ Firebase 雲端同步已啟用，資料跨裝置同步
+  </div>
+
+  <div class="section">
+    <div class="section-title">我的工具</div>
+    <div class="apps-grid">
+      <a href="記帳.html" class="app-card">
+        <span class="app-icon">💰</span>
+        <div class="app-name">旅遊記帳</div>
+        <div class="app-desc">記錄消費、統計分析、台幣日幣換算</div>
+      </a>
+      <a href="購物紀錄.html" class="app-card">
+        <span class="app-icon">🛍</span>
+        <div class="app-name">購物紀錄</div>
+        <div class="app-desc">追蹤購物清單與月份消費記錄</div>
+      </a>
+      <a href="arts-tracker.html" class="app-card">
+        <span class="app-icon">🎭</span>
+        <div class="app-name">藝文記錄</div>
+        <div class="app-desc">演唱會、展覽、電影、演出行程規劃</div>
+      </a>
+      <a href="routine_tracker.html" class="app-card">
+        <span class="app-icon">📋</span>
+        <div class="app-name">日常計畫</div>
+        <div class="app-desc">Routine、習慣追蹤、每日記錄存檔</div>
+      </a>
+      <a href="wishlist.html" class="app-card" style="grid-column: 1 / -1;">
+        <span class="app-icon">⭐</span>
+        <div class="app-name">願望清單 &amp; 景點</div>
+        <div class="app-desc">想買的、想去的，一次管理</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('tripapp:ready', function(e) {
+  var user = e.detail.user;
+  var el = document.getElementById('hero-user');
+  el.classList.add('show');
+  document.getElementById('hero-name').textContent = user.displayName || user.email || '歡迎回來';
+  var ph = document.getElementById('hero-avatar-ph');
+  if (user.photoURL) {
+    ph.outerHTML = '<img class="hero-avatar" src="' + user.photoURL + '" alt="avatar">';
+  } else {
+    ph.textContent = (user.displayName || 'U')[0].toUpperCase();
+  }
+});
+</script>
+</body>
+</html>
