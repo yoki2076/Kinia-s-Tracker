@@ -124,11 +124,10 @@ document.head.appendChild(style);
 // ── App 清單（可在此新增頁面）────────────────────────
 const APPS = [
   { label: '🌸 首頁', href: 'index.html' },
-  { label: '💰 記帳', href: '記帳.html' },
-  { label: '🛍 購物', href: '購物紀錄.html' },
+  { label: '💰 記帳', href: '購物紀錄.html' },
+  { label: '🛍 購物', href: 'wishlist.html' },
   { label: '🎨 藝文', href: 'arts-tracker.html' },
   { label: '📋 計畫', href: 'routine_tracker.html' },
-  { label: '⭐ 願望', href: 'wishlist.html' },
 ];
 
 const currentFile = location.pathname.split('/').pop() || 'index.html';

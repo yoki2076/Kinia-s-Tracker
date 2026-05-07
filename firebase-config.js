@@ -34,12 +34,12 @@ import {
 //  從 Firebase Console → 專案設定 → 你的應用程式 → SDK 設定和配置 複製
 // ══════════════════════════════════════════════════════
 const firebaseConfig = {
-  apiKey: "AIzaSyBylnTy_pDq8fnF9j0rfz6X8NAz2nOPwtE",
-  authDomain: "kinia-s-tracker.firebaseapp.com",
-  projectId: "kinia-s-tracker",
-  storageBucket: "kinia-s-tracker.firebasestorage.app",
-  messagingSenderId: "51395444020",
-  appId: "1:51395444020:web:e467a74bdbdb3d5e3eb961"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
 };
 
 const app = initializeApp(firebaseConfig);
