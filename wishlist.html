@@ -533,7 +533,7 @@
 </head>
 <body>
 <!-- 🔐 登入保護 + 導覽列 -->
-<script type="module" src="auth-guard.js"></script>
+<script src="auth-guard.js"></script>
 
 <!-- ══ TOP PAGE SWITCHER ══ -->
 <div class="page-switcher">
@@ -1487,45 +1487,38 @@ W.init();
 P.render(); // render but don't show (page 1 is hidden)
 
 // ── Firebase 同步（等登入完成後執行）──
-window.addEventListener('tripapp:ready', async function(e) {
-  try {
-    var fb = await import('./firebase-config.js');
-    var uid = e.detail.user.uid;
-    var W_DOC = 'users/' + uid + '/data/wishlist';
-    var P_DOC = 'users/' + uid + '/data/placelist';
-    window._fbSave = async function() {
-      var wItems = JSON.parse(localStorage.getItem('wishlist_items')||'[]');
-      var wCats  = JSON.parse(localStorage.getItem('wishlist_cats')||'[]');
-      var wCur   = localStorage.getItem('wishlist_cur')||'TWD';
-      await fb.fsSet(W_DOC, { items: wItems, cats: wCats, currency: wCur });
-    };
-    window._fbSavePlaces = async function() {
-      var pItems = JSON.parse(localStorage.getItem('placelist_items')||'[]');
-      var pCats  = JSON.parse(localStorage.getItem('placelist_cats')||'[]');
-      await fb.fsSet(P_DOC, { items: pItems, cats: pCats });
-    };
-    var wSnap = await fb.fsGet(W_DOC);
+window.addEventListener('tripapp:ready', function(e) {
+  var uid = e.detail.user.uid;
+  var W_DOC = 'users/' + uid + '/data/wishlist';
+  var P_DOC = 'users/' + uid + '/data/placelist';
+  window._fbSave = function() {
+    var wItems = JSON.parse(localStorage.getItem('wishlist_items')||'[]');
+    var wCats  = JSON.parse(localStorage.getItem('wishlist_cats')||'[]');
+    var wCur   = localStorage.getItem('wishlist_cur')||'TWD';
+    window._fb.fsSet(W_DOC, { items: wItems, cats: wCats, currency: wCur });
+  };
+  window._fbSavePlaces = function() {
+    var pItems = JSON.parse(localStorage.getItem('placelist_items')||'[]');
+    var pCats  = JSON.parse(localStorage.getItem('placelist_cats')||'[]');
+    window._fb.fsSet(P_DOC, { items: pItems, cats: pCats });
+  };
+  window._fb.fsGet(W_DOC).then(function(wSnap) {
     if (wSnap.exists()) {
       var wd = wSnap.data();
       if (wd.items && wd.items.length) localStorage.setItem('wishlist_items', JSON.stringify(wd.items));
       if (wd.cats  && wd.cats.length)  localStorage.setItem('wishlist_cats',  JSON.stringify(wd.cats));
       if (wd.currency) localStorage.setItem('wishlist_cur', wd.currency);
       if (window.W && window.W.reload) window.W.reload();
-    } else {
-      if (window._fbSave) window._fbSave();
-    }
-    var pSnap = await fb.fsGet(P_DOC);
+    } else { if (window._fbSave) window._fbSave(); }
+  });
+  window._fb.fsGet(P_DOC).then(function(pSnap) {
     if (pSnap.exists()) {
       var pd = pSnap.data();
       if (pd.items && pd.items.length) localStorage.setItem('placelist_items', JSON.stringify(pd.items));
       if (pd.cats  && pd.cats.length)  localStorage.setItem('placelist_cats',  JSON.stringify(pd.cats));
       if (window.P && window.P.reload) window.P.reload();
-    } else {
-      if (window._fbSavePlaces) window._fbSavePlaces();
-    }
-  } catch(err) {
-    window._fbSave = null; window._fbSavePlaces = null;
-  }
+    } else { if (window._fbSavePlaces) window._fbSavePlaces(); }
+  });
 });
 </script>
 

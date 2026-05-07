@@ -209,7 +209,7 @@
 </head>
 <body>
 <!-- 🔐 登入保護 + 導覽列 -->
-<script type="module" src="auth-guard.js"></script>
+<script src="auth-guard.js"></script>
 <div id="app">
   <!-- HEADER -->
   <div class="header">
@@ -1096,15 +1096,13 @@ updateHeader();
 updateMonthNav();
 
 // ── Firebase 同步（等登入完成後執行）──
-window.addEventListener('tripapp:ready', async function(e) {
-  try {
-    var fb = await import('./firebase-config.js');
-    var uid = e.detail.user.uid;
-    var DOC = 'users/' + uid + '/data/shopping';
-    window._fbSave = async function() {
-      await fb.fsSet(DOC, { expenses: expenses, nextId: nextId });
-    };
-    var snap = await fb.fsGet(DOC);
+window.addEventListener('tripapp:ready', function(e) {
+  var uid = e.detail.user.uid;
+  var DOC = 'users/' + uid + '/data/shopping';
+  window._fbSave = function() {
+    window._fb.fsSet(DOC, { expenses: expenses, nextId: nextId });
+  };
+  window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
       var d = snap.data();
       if (d.expenses && d.expenses.length) {
@@ -1114,9 +1112,7 @@ window.addEventListener('tripapp:ready', async function(e) {
         renderList();
       }
     }
-  } catch(e) {
-    window._fbSave = null;
-  }
+  });
 });
 </script>
 

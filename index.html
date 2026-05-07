@@ -116,7 +116,7 @@ body {
 </head>
 <body>
 <!-- 🔐 登入保護 + 導覽列 -->
-<script type="module" src="auth-guard.js"></script>
+<script src="auth-guard.js"></script>
 
 <div id="app">
   <div class="hero">
@@ -136,15 +136,15 @@ body {
   <div class="section">
     <div class="section-title">我的工具</div>
     <div class="apps-grid">
-      <a href="記帳.html" class="app-card">
+      <a href="購物紀錄.html" class="app-card">
         <span class="app-icon">💰</span>
-        <div class="app-name">旅遊記帳</div>
+        <div class="app-name">記帳</div>
         <div class="app-desc">記錄消費、統計分析、台幣日幣換算</div>
       </a>
-      <a href="購物紀錄.html" class="app-card">
+      <a href="wishlist.html" class="app-card">
         <span class="app-icon">🛍</span>
-        <div class="app-name">購物紀錄</div>
-        <div class="app-desc">追蹤購物清單與月份消費記錄</div>
+        <div class="app-name">購物清單</div>
+        <div class="app-desc">願望清單、景點，想買想去的都在這</div>
       </a>
       <a href="arts-tracker.html" class="app-card">
         <span class="app-icon">🎭</span>
@@ -155,11 +155,6 @@ body {
         <span class="app-icon">📋</span>
         <div class="app-name">日常計畫</div>
         <div class="app-desc">Routine、習慣追蹤、每日記錄存檔</div>
-      </a>
-      <a href="wishlist.html" class="app-card" style="grid-column: 1 / -1;">
-        <span class="app-icon">⭐</span>
-        <div class="app-name">願望清單 &amp; 景點</div>
-        <div class="app-desc">想買的、想去的，一次管理</div>
       </a>
     </div>
   </div>

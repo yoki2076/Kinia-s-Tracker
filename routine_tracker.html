@@ -199,7 +199,7 @@ body{font-family:'Noto Sans TC',sans-serif,system-ui;background:var(--bg);color:
 </head>
 <body>
 <!-- 🔐 登入保護 + 導覽列 -->
-<script type="module" src="auth-guard.js"></script>
+<script src="auth-guard.js"></script>
 
 <div class="app">
 <div class="top-bar">
@@ -778,30 +778,23 @@ function nextMonth(){archiveMonth++;if(archiveMonth>11){archiveMonth=0;archiveYe
 renderAll();
 
 // ── Firebase 同步（等登入完成後執行）──
-window.addEventListener('tripapp:ready', async function(e) {
-  try {
-    var fb = await import('./firebase-config.js');
-    var uid = e.detail.user.uid;
-    var DOC = 'users/' + uid + '/data/routine';
-    var _origSaveToday = saveToday;
-    saveToday = function() {
-      _origSaveToday();
-      if (window._fbSave) window._fbSave();
-    };
-    window._fbSave = async function() {
-      await fb.fsSet(DOC, { S: S });
-    };
-    var snap = await fb.fsGet(DOC);
+window.addEventListener('tripapp:ready', function(e) {
+  var uid = e.detail.user.uid;
+  var DOC = 'users/' + uid + '/data/routine';
+  var _origSaveToday = saveToday;
+  saveToday = function() {
+    _origSaveToday();
+    if (window._fbSave) window._fbSave();
+  };
+  window._fbSave = function() {
+    window._fb.fsSet(DOC, { S: S });
+  };
+  window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
       var d = snap.data();
-      if (d.S) {
-        S = Object.assign(S, d.S);
-        renderAll();
-      }
+      if (d.S) { S = Object.assign(S, d.S); renderAll(); }
     }
-  } catch(err) {
-    window._fbSave = null;
-  }
+  });
 });
 </script>
 </body>
