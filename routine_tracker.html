@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>日常計畫</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+--sage:#6b9370;--sage-light:#ddeade;--sage-mid:#a5c4a8;--sage-dark:#3d6b42;
+--bg:#f0ece2;--warm:#e8e2d6;--paper:#faf7f0;--card:#f5f1e8;
+--ink:#2a2826;--ink-mid:#5c5850;--ink-light:#9a9488;
+--blush:#ede0dd;--blush-mid:#c9a8a4;--blush-deep:#b08880;--blush-dk:#7a5050;
+--gold:#b89a58;--gold-light:#f0e6ca;--gold-dark:#7a6030;
+--border:#d8d0c0;--border-mid:#c8bfac;
+--r:12px;
+}
+body{font-family:'Noto Sans TC',sans-serif,system-ui;background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px}
+.app{max-width:760px;margin:0 auto;padding-bottom:60px}
+.top-bar{background:var(--paper);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.app-title{font-family:'Palatino Linotype',Palatino,serif;font-size:19px;font-weight:400;color:var(--ink)}
+.app-sub{font-size:10px;color:var(--ink-light);margin-top:2px;letter-spacing:1px;text-transform:uppercase}
+.date-pill{background:var(--sage-light);border:1px solid var(--sage-mid);border-radius:20px;padding:5px 14px;font-size:12px;color:var(--sage-dark);font-weight:500}
+.tab-nav{display:flex;background:var(--paper);border-bottom:1px solid var(--border)}
+.tab-btn{flex:1;padding:12px 6px;font-size:12px;border:none;background:transparent;cursor:pointer;color:var(--ink-light);border-bottom:2px solid transparent;transition:all .2s;font-family:inherit}
+.tab-btn.active{color:var(--sage);border-bottom-color:var(--sage);font-weight:500}
+.tab-btn:hover:not(.active){color:var(--ink-mid)}
+.page{display:none;padding:16px 20px;animation:fadeIn .25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+.sec-header{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px}
+.sec-title{font-family:'Palatino Linotype',Palatino,serif;font-size:15px;font-weight:400;color:var(--ink);display:flex;align-items:center;gap:7px}
+.sec-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-sage{background:var(--sage)}.dot-blush{background:var(--blush-deep)}.dot-gold{background:var(--gold)}
+.add-btn{font-size:11px;color:var(--sage-dark);border:1px solid var(--sage-mid);background:var(--sage-light);border-radius:20px;padding:4px 11px;cursor:pointer;font-family:inherit;transition:all .15s}
+.add-btn:hover{background:var(--sage-mid);color:white}
+
+/* PERIOD */
+.period-block{margin-bottom:14px}
+.period-label{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.period-tag{font-size:10px;font-weight:500;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:20px}
+.period-morning{background:var(--gold-light);color:var(--gold-dark)}
+.period-noon{background:var(--sage-light);color:var(--sage-dark)}
+.period-evening{background:var(--blush);color:var(--blush-dk)}
+.period-line{flex:1;height:1px;background:var(--border)}
+
+/* TIMELINE */
+.timeline-wrap{position:relative;padding-left:32px}
+.timeline-line{position:absolute;left:10px;top:8px;bottom:8px;width:1px;background:var(--border-mid)}
+.tl-entry{position:relative;margin-bottom:10px}
+.tl-dot{position:absolute;left:-26px;top:10px;width:9px;height:9px;border-radius:50%;border:2px solid var(--sage-mid);background:var(--paper);z-index:1}
+.tl-dot.done{background:var(--sage);border-color:var(--sage)}
+.tl-card{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;transition:box-shadow .15s}
+.tl-card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.tl-name{font-size:13px;font-weight:500;color:var(--ink);flex:1;min-width:80px}
+.tl-type-badge{font-size:10px;border-radius:10px;padding:2px 7px;white-space:nowrap}
+.badge-course{background:var(--gold-light);color:var(--gold-dark)}
+.badge-practice{background:var(--sage-light);color:var(--sage-dark)}
+.badge-exercise{background:var(--blush);color:var(--blush-dk)}
+.badge-reading{background:#e8eaf5;color:#3a4070}
+.badge-other{background:var(--warm);color:var(--ink-mid)}
+.time-input{border:none;background:transparent;font-size:11px;color:var(--sage-dark);font-family:inherit;width:52px;cursor:pointer;outline:none}
+.tl-fields{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px}
+.tl-field{display:flex;flex-direction:column;gap:3px}
+.field-label{font-size:10px;color:var(--ink-light);letter-spacing:.5px;text-transform:uppercase}
+.field-textarea{width:100%;border:1px solid var(--border);background:var(--warm);border-radius:7px;padding:6px 8px;font-size:11px;color:var(--ink-mid);resize:none;font-family:inherit;min-height:46px;outline:none;transition:all .15s}
+.field-textarea:focus{background:var(--paper);border-color:var(--sage-mid)}
+.field-textarea::placeholder{color:var(--ink-light)}
+.tl-card-actions{display:flex;gap:6px;margin-top:8px;justify-content:flex-end}
+.tiny-btn{font-size:10px;color:var(--ink-light);border:none;background:transparent;cursor:pointer;padding:2px 5px;border-radius:4px;font-family:inherit}
+.tiny-btn:hover{background:var(--warm);color:var(--ink)}
+.del-t{color:var(--blush-deep)}.del-t:hover{background:var(--blush)}
+
+/* CARD */
+.card{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+
+/* CHECKLIST */
+.check-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.check-row:last-of-type{border-bottom:none}
+.checkbox{width:20px;height:20px;border:2.5px solid var(--sage-mid);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;background:var(--paper)}
+.checkbox.on{background:var(--sage);border-color:var(--sage)}
+.chk-mark{display:none;color:white;font-size:12px;font-weight:700;line-height:1}
+.checkbox.on .chk-mark{display:block}
+.chk-label{font-size:13px;color:var(--ink-mid);flex:1}
+.chk-done{color:var(--ink-light);text-decoration:line-through}
+.row-del{font-size:11px;color:var(--ink-light);border:none;background:transparent;cursor:pointer;padding:2px 4px;opacity:0;transition:opacity .15s;border-radius:4px}
+.check-row:hover .row-del{opacity:1}
+.row-del:hover{color:var(--blush-deep);background:var(--blush)}
+.prog-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:10px}
+.prog-fill{height:100%;background:var(--sage);border-radius:2px;transition:width .4s ease}
+.prog-txt{font-size:10px;color:var(--ink-light);margin-top:4px;text-align:right}
+
+/* HABITS */
+.habit-head{display:flex;gap:8px;margin-bottom:6px;align-items:center}
+.habit-row2{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--border)}
+.habit-row2:last-child{border-bottom:none}
+.habit-name2{font-size:13px;color:var(--ink-mid);flex:1}
+.hab-dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--border-mid);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;background:transparent;flex-shrink:0;font-family:inherit}
+.hab-dot.am{background:var(--sage);border-color:var(--sage);color:white}
+.hab-dot.pm{background:var(--blush-deep);border-color:var(--blush-deep);color:white}
+
+/* SHOWER */
+.shower-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.shower-item{border:1px solid var(--border);border-radius:9px;padding:9px 8px;cursor:pointer;text-align:center;transition:all .15s;background:var(--card)}
+.shower-item.on{background:var(--sage-light);border-color:var(--sage-mid)}
+.shower-icon{font-size:18px;display:block;margin-bottom:3px}
+.shower-name{font-size:11px;color:var(--ink-mid)}
+.shower-item.on .shower-name{color:var(--sage-dark);font-weight:500}
+
+/* SKINCARE */
+.sc-item-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.sc-item-row:last-child{border-bottom:none}
+.sc-cat-name{font-size:12px;color:var(--ink-light);width:68px;flex-shrink:0}
+.sc-brand-inp{flex:1;border:none;border-bottom:1px dashed var(--border-mid);background:transparent;font-size:12px;font-family:inherit;color:var(--ink-mid);outline:none;padding:1px 0;min-width:0}
+.sc-brand-inp:focus{border-bottom-color:var(--blush-deep)}
+.sc-brand-inp::placeholder{color:var(--ink-light);font-style:italic}
+.sc-time-dots{display:flex;gap:5px;flex-shrink:0}
+.sc-dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--border-mid);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .15s;background:transparent;font-family:inherit;flex-shrink:0}
+.sc-dot.am-on{background:var(--gold);border-color:var(--gold);color:white}
+.sc-dot.pm-on{background:var(--blush-deep);border-color:var(--blush-deep);color:white}
+.sc-toggle{width:24px;height:24px;border-radius:50%;border:2px solid var(--border-mid);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s;background:transparent;flex-shrink:0}
+.sc-toggle.on{background:var(--blush-deep);border-color:var(--blush-deep);color:white}
+.sc-del{font-size:11px;color:var(--ink-light);border:none;background:transparent;cursor:pointer;padding:2px;opacity:0;transition:opacity .15s}
+.sc-item-row:hover .sc-del{opacity:1}
+.sc-del:hover{color:var(--blush-deep)}
+
+/* ARCHIVE */
+.month-nav{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
+.month-nav-btn{background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:5px 16px;font-size:14px;cursor:pointer;font-family:inherit;color:var(--ink-mid);transition:background .15s}
+.month-nav-btn:hover{background:var(--warm)}
+.month-label{font-family:'Palatino Linotype',Palatino,serif;font-size:17px;color:var(--ink)}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.stat-card{background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center}
+.stat-num{font-size:24px;font-weight:500;color:var(--ink);line-height:1}
+.stat-lbl{font-size:11px;color:var(--ink-light);margin-top:4px}
+.cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px}
+.cal-day-name{text-align:center;font-size:10px;color:var(--ink-light);padding:4px 0}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-cell{aspect-ratio:1;border-radius:7px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;border:1px solid transparent;background:var(--card)}
+.cal-cell.empty{cursor:default;background:transparent}
+.cal-cell:not(.empty):hover{border-color:var(--sage-mid);background:var(--sage-light)}
+.cal-cell.selected{border-color:var(--sage) !important;background:var(--sage-light) !important}
+.cal-num{font-size:12px;font-weight:500;color:var(--ink-mid)}
+.cal-cell.today .cal-num{color:var(--sage-dark);font-weight:700}
+.cal-cell.today{border-color:var(--sage-mid)}
+.cal-cell.has-data{background:rgba(107,147,112,.15)}
+.cal-dots{display:flex;gap:2px;margin-top:2px;justify-content:center;flex-wrap:wrap;max-width:26px}
+.cal-dot{width:5px;height:5px;border-radius:50%}
+.dot-r{background:var(--sage)}.dot-h{background:var(--blush-deep)}
+.heatmap-legend{display:flex;gap:4px;align-items:center;justify-content:flex-end;margin-bottom:8px}
+.hl-box{width:11px;height:11px;border-radius:2px}
+.hl-txt{font-size:10px;color:var(--ink-light)}
+
+/* DETAIL PANEL */
+.detail-panel{background:var(--paper);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-top:14px}
+.detail-date{font-family:'Palatino Linotype',Palatino,serif;font-size:15px;color:var(--ink);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.edit-day-btn{font-size:11px;color:var(--sage-dark);border:1px solid var(--sage-mid);background:var(--sage-light);border-radius:20px;padding:4px 11px;cursor:pointer;font-family:inherit;transition:all .15s}
+.edit-day-btn:hover{background:var(--sage-mid);color:white}
+.detail-section{margin-bottom:10px}
+.detail-section-label{font-size:10px;color:var(--ink-light);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;font-weight:500}
+.det-routine-card{background:var(--warm);border-radius:8px;padding:9px 11px;margin-bottom:6px}
+.det-routine-top{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.det-tl-line{display:flex;gap:10px;margin-top:4px}
+.det-tl-col{flex:1}
+.det-tl-label{font-size:10px;color:var(--ink-light);letter-spacing:.4px;text-transform:uppercase;margin-bottom:2px}
+.det-tl-val{font-size:11px;color:var(--ink-mid);line-height:1.4;font-style:italic}
+.chip{display:inline-block;font-size:11px;border-radius:10px;padding:2px 9px;margin:2px}
+.chip-sage{background:var(--sage-light);color:var(--sage-dark)}
+.chip-blush{background:var(--blush);color:var(--blush-dk)}
+.chip-gold{background:var(--gold-light);color:var(--gold-dark)}
+
+/* EDIT OVERLAY */
+.edit-overlay{display:none;position:fixed;inset:0;background:rgba(30,26,20,.55);z-index:150;align-items:flex-start;justify-content:center;padding-top:48px;overflow-y:auto}
+.edit-overlay.open{display:flex}
+.edit-panel{background:var(--paper);border-radius:16px;padding:22px;width:680px;max-width:95vw;margin-bottom:40px;border:1px solid var(--border)}
+.edit-panel-title{font-family:'Palatino Linotype',Palatino,serif;font-size:16px;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.close-x{font-size:18px;color:var(--ink-light);border:none;background:transparent;cursor:pointer;padding:0 4px;line-height:1}
+.close-x:hover{color:var(--ink)}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(30,26,20,.55);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--paper);border-radius:16px;padding:22px;width:340px;max-width:90vw;border:1px solid var(--border-mid)}
+.modal-title{font-family:'Palatino Linotype',Palatino,serif;font-size:16px;margin-bottom:14px;color:var(--ink)}
+.mi{width:100%;border:1px solid var(--border-mid);border-radius:8px;padding:8px 10px;font-size:12px;font-family:inherit;background:var(--warm);color:var(--ink);outline:none;margin-bottom:8px;display:block}
+.mi:focus{border-color:var(--sage-mid);background:var(--paper)}
+.modal-foot{display:flex;gap:7px;justify-content:flex-end;margin-top:4px}
+.m-cancel{background:var(--warm);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;color:var(--ink-mid);font-family:inherit}
+.m-cancel:hover{background:var(--card)}
+.m-ok{background:var(--sage);color:white;border:none;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit}
+.m-ok:hover{background:var(--sage-dark)}
+.custom-type-row{display:flex;gap:6px;margin-bottom:8px}
+.custom-type-inp{flex:1;border:1px solid var(--border-mid);border-radius:8px;padding:7px 9px;font-size:12px;font-family:inherit;background:var(--warm);color:var(--ink);outline:none}
+.custom-type-inp:focus{border-color:var(--sage-mid)}
+.custom-type-add{background:var(--sage);color:white;border:none;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;font-family:inherit}
+.custom-type-add:hover{background:var(--sage-dark)}
+</style>
+</head>
+<body>
+<!-- 🔐 登入保護 + 導覽列 -->
+<script type="module" src="auth-guard.js"></script>
+
+<div class="app">
+<div class="top-bar">
+  <div>
+    <div class="app-title">My Daily Journal</div>
+    <div class="app-sub">Routine &amp; Habit Tracker</div>
+  </div>
+  <div class="date-pill" id="todayPill"></div>
+</div>
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('daily')">每日 Routine</button>
+  <button class="tab-btn" onclick="switchTab('hygiene')">衛生習慣</button>
+  <button class="tab-btn" onclick="switchTab('archive')">Archive</button>
+</div>
+
+<div class="page active" id="page-daily">
+  <div class="sec-header">
+    <div class="sec-title"><span class="sec-dot dot-sage"></span>今日 Routine 計畫</div>
+    <button class="add-btn" onclick="openModal('addRoutine')">＋ 新增</button>
+  </div>
+  <div id="routineList"></div>
+  <div class="sec-header" style="margin-top:20px">
+    <div class="sec-title"><span class="sec-dot dot-gold"></span>出門 Checklist</div>
+    <button class="add-btn" onclick="openAddCheck()">＋ 新增</button>
+  </div>
+  <div class="card">
+    <div id="checklistItems"></div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog-txt" id="progTxt"></div>
+  </div>
+</div>
+
+<div class="page" id="page-hygiene">
+  <div class="sec-header">
+    <div class="sec-title"><span class="sec-dot dot-sage"></span>洗漱習慣</div>
+    <button class="add-btn" onclick="openModal('addHabit')">＋ 新增</button>
+  </div>
+  <div class="card">
+    <div class="habit-head">
+      <div style="width:22px"></div>
+      <div style="flex:1;font-size:10px;color:var(--ink-light)">習慣</div>
+      <div style="width:26px;text-align:center;font-size:10px;color:var(--sage-dark)">早</div>
+      <div style="width:8px"></div>
+      <div style="width:26px;text-align:center;font-size:10px;color:var(--blush-deep)">晚</div>
+    </div>
+    <div id="habitList"></div>
+  </div>
+  <div class="sec-header" style="margin-top:18px">
+    <div class="sec-title"><span class="sec-dot dot-blush"></span>今日洗澡紀錄</div>
+    <button class="add-btn" onclick="openModal('addShower')">＋ 自訂</button>
+  </div>
+  <div class="card"><div class="shower-grid" id="showerGrid"></div></div>
+  <div class="sec-header" style="margin-top:18px">
+    <div class="sec-title"><span class="sec-dot dot-blush"></span>臉部保養</div>
+    <button class="add-btn" onclick="openModal('addFace')">＋ 新增品項</button>
+  </div>
+  <div class="card">
+    <div style="display:flex;gap:8px;margin-bottom:6px">
+      <div style="width:68px"></div><div style="flex:1"></div>
+      <div style="display:flex;gap:5px;width:58px">
+        <div style="width:24px;text-align:center;font-size:10px;color:var(--gold-dark)">早</div>
+        <div style="width:24px;text-align:center;font-size:10px;color:var(--blush-dk)">晚</div>
+      </div>
+      <div style="width:20px"></div>
+    </div>
+    <div id="faceSkincareWrap"></div>
+  </div>
+  <div class="sec-header" style="margin-top:18px">
+    <div class="sec-title"><span class="sec-dot dot-gold"></span>身體保養</div>
+    <button class="add-btn" onclick="openModal('addBody')">＋ 新增品項</button>
+  </div>
+  <div class="card" id="bodySkincareWrap"></div>
+</div>
+
+<div class="page" id="page-archive">
+  <div style="margin-top:14px">
+    <div class="month-nav">
+      <button class="month-nav-btn" onclick="prevMonth()">‹</button>
+      <div class="month-label" id="monthLabel"></div>
+      <button class="month-nav-btn" onclick="nextMonth()">›</button>
+    </div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="heatmap-legend">
+      <span class="hl-txt">Routine</span><span class="hl-box" style="background:var(--sage);margin-left:3px"></span>
+      <span class="hl-txt" style="margin-left:8px">衛生</span><span class="hl-box" style="background:var(--blush-deep);margin-left:3px"></span>
+    </div>
+    <div class="cal-header" id="calHeader"></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="detail-panel" id="detailPanel">
+      <div style="color:var(--ink-light);font-size:12px;font-style:italic;text-align:center;padding:16px 0">點擊日期查看紀錄，或點擊「編輯」補記</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- EDIT OVERLAY -->
+<div class="edit-overlay" id="editOverlay">
+  <div class="edit-panel">
+    <div class="edit-panel-title">
+      <span id="editPanelTitle">補記 / 編輯</span>
+      <button class="close-x" onclick="closeEdit()">✕</button>
+    </div>
+    <div id="editPanelBody"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
+      <button class="m-cancel" onclick="closeEdit()">取消</button>
+      <button class="m-ok" onclick="saveEdit()">儲存紀錄</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <input class="mi" id="mIn1" placeholder="">
+    <div id="customTypeArea" style="display:none">
+      <div class="custom-type-row">
+        <input class="custom-type-inp" id="customTypeInp" placeholder="輸入自訂類型名稱">
+        <button class="custom-type-add" onclick="addCustomType()">新增</button>
+      </div>
+    </div>
+    <select class="mi" id="mSel" style="display:none;cursor:pointer">
+      <option value="morning">早晨</option>
+      <option value="noon">中午</option>
+      <option value="evening">晚上</option>
+    </select>
+    <select class="mi" id="mType" style="display:none;cursor:pointer"></select>
+    <div class="modal-foot">
+      <button class="m-cancel" onclick="closeModal()">取消</button>
+      <button class="m-ok" onclick="confirmModal()">確認</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const now=new Date();
+function fmtDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function fmtLabel(ds){var p=ds.split('-');return parseInt(p[1])+'月'+parseInt(p[2])+'日';}
+const todayStr=fmtDate(now);
+const dayNames=['日','一','二','三','四','五','六'];
+document.getElementById('todayPill').textContent=(now.getMonth()+1)+'月'+now.getDate()+'日 週'+dayNames[now.getDay()];
+
+const periodOrder=['morning','noon','evening'];
+const periodLabel={morning:'早晨',noon:'中午',evening:'晚上'};
+const periodClass={morning:'period-morning',noon:'period-noon',evening:'period-evening'};
+const typeBadgeClass={course:'badge-course',practice:'badge-practice',exercise:'badge-exercise',reading:'badge-reading',other:'badge-other'};
+
+var archiveYear=now.getFullYear(),archiveMonth=now.getMonth();
+var selectedDateStr=null,editingDateStr=null;
+
+var S={
+  customTypes:{},
+  routines:[
+    {id:1,name:'英文課',type:'course',period:'morning',time:'09:00',notes:'學了過去完成式。',improve:'時態切換需加強。'},
+    {id:2,name:'鋼琴練習',type:'practice',period:'morning',time:'10:30',notes:'練了蕭邦夜曲前兩頁。',improve:'左手節奏不穩。'},
+    {id:3,name:'英文閱讀',type:'reading',period:'evening',time:'20:00',notes:'讀了15頁小說。',improve:''},
+  ],
+  checklist:[
+    {id:1,text:'鑰匙',done:false},
+    {id:2,text:'錢包 / 悠遊卡',done:true},
+    {id:3,text:'耳機',done:false},
+    {id:4,text:'水壺',done:false},
+  ],
+  habits:[
+    {id:1,name:'刷牙',am:true,pm:false},
+    {id:2,name:'洗臉',am:true,pm:true},
+    {id:3,name:'漱口水',am:false,pm:false},
+    {id:4,name:'護唇膏',am:true,pm:true},
+  ],
+  shower:[
+    {id:1,name:'洗頭',icon:'💆',done:true},
+    {id:2,name:'洗身體',icon:'🚿',done:true},
+    {id:3,name:'洗臉',icon:'💧',done:false},
+    {id:4,name:'腳部清潔',icon:'🦶',done:false},
+  ],
+  faceSkincare:[
+    {id:1,cat:'化妝水',brand:'SK-II 神仙水',am:true,pm:true},
+    {id:2,cat:'精華液',brand:'Laneige',am:true,pm:false},
+    {id:3,cat:'乳液',brand:'',am:false,pm:false},
+    {id:4,cat:'防曬乳',brand:'Biore SPF50+',am:false,pm:false},
+  ],
+  bodySkincare:[
+    {id:1,cat:'身體乳',brand:'Vaseline',used:true},
+    {id:2,cat:'護手霜',brand:'',used:false},
+  ],
+  archive:{},
+};
+
+function getTypeOpts(){
+  var base={course:'課程學習',practice:'練習項目',exercise:'運動',reading:'閱讀'};
+  var merged=Object.assign({},base,S.customTypes,{other:'其他'});
+  return merged;
+}
+function getTypeLabel(t){return getTypeOpts()[t]||t;}
+function getBadgeClass(t){return typeBadgeClass[t]||'badge-other';}
+
+function saveToday(){
+  S.archive[todayStr]={
+    routines:S.routines.map(function(r){return Object.assign({},r);}),
+    habits:S.habits.filter(function(h){return h.am||h.pm;}).map(function(h){return Object.assign({},h);}),
+    shower:S.shower.filter(function(s){return s.done;}).map(function(s){return s.name;}),
+    face:S.faceSkincare.filter(function(p){return p.am||p.pm;}).map(function(p){return Object.assign({},p);}),
+    body:S.bodySkincare.filter(function(p){return p.used;}).map(function(p){return Object.assign({},p);}),
+  };
+}
+saveToday();
+
+function buildSampleArchive(){
+  var y=now.getFullYear(),m=now.getMonth();
+  var rNames=['英文課','鋼琴練習','晨跑','閱讀','瑜珈'];
+  for(var d=1;d<now.getDate();d++){
+    var ds=fmtDate(new Date(y,m,d));
+    if(!S.archive[ds]){
+      var rc=Math.floor(Math.random()*3+1);
+      var hc=Math.floor(Math.random()*2+1);
+      var routines=[];
+      for(var i=0;i<rc;i++){
+        routines.push({id:i,name:rNames[(d+i)%rNames.length],type:['course','practice','exercise','reading'][i%4],period:periodOrder[i%3],time:'0'+(8+i*2)+':00',notes:'有完成',improve:i===0?'繼續加油':'',});
+      }
+      S.archive[ds]={
+        routines:routines,
+        habits:hc>0?[{name:'刷牙',am:true,pm:d%2===0},{name:'洗臉',am:true,pm:true}].slice(0,hc):[],
+        shower:d%3===0?['洗頭','洗身體']:[],
+        face:[],body:[]
+      };
+    }
+  }
+}
+buildSampleArchive();
+
+function switchTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(function(b,i){b.classList.toggle('active',['daily','hygiene','archive'][i]===tab);});
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('page-'+tab).classList.add('active');
+  if(tab==='archive')renderArchive();
+}
+
+function renderAll(){renderRoutines();renderChecklist();renderHabits();renderShower();renderSkincare();saveToday();}
+
+function renderRoutines(){
+  var el=document.getElementById('routineList');
+  if(!S.routines.length){el.innerHTML='<div style="text-align:center;color:var(--ink-light);font-size:12px;padding:16px;font-style:italic">尚無 Routine</div>';return;}
+  var grouped={morning:[],noon:[],evening:[]};
+  S.routines.forEach(function(r){(grouped[r.period]||grouped.morning).push(r);});
+  var html='';
+  periodOrder.forEach(function(per){
+    if(!grouped[per].length)return;
+    html+='<div class="period-block"><div class="period-label"><span class="period-tag '+periodClass[per]+'">'+periodLabel[per]+'</span><span class="period-line"></span></div><div class="timeline-wrap"><div class="timeline-line"></div>';
+    grouped[per].forEach(function(r){
+      var hasDone=r.notes||r.improve;
+      html+='<div class="tl-entry"><div class="tl-dot '+(hasDone?'done':'')+'"></div><div class="tl-card">'
+        +'<div class="tl-card-top"><span class="tl-name">'+r.name+'</span><span class="tl-type-badge '+getBadgeClass(r.type)+'">'+getTypeLabel(r.type)+'</span>'
+        +'<input class="time-input" type="time" value="'+r.time+'" onchange="updateRF('+r.id+',\'time\',this.value)"></div>'
+        +'<div class="tl-fields">'
+        +'<div class="tl-field"><div class="field-label">今日紀錄</div><textarea class="field-textarea" placeholder="今天學了/練了什麼..." oninput="updateRF('+r.id+',\'notes\',this.value)">'+r.notes+'</textarea></div>'
+        +'<div class="tl-field"><div class="field-label">待改善</div><textarea class="field-textarea" placeholder="哪裡需要加強..." oninput="updateRF('+r.id+',\'improve\',this.value)">'+r.improve+'</textarea></div>'
+        +'</div>'
+        +'<div class="tl-card-actions"><button class="tiny-btn del-t" onclick="delRoutine('+r.id+')">✕ 刪除</button></div>'
+        +'</div></div>';
+    });
+    html+='</div></div>';
+  });
+  el.innerHTML=html;
+}
+function updateRF(id,f,v){var r=S.routines.find(function(x){return x.id===id;});if(r){r[f]=v;saveToday();}}
+function delRoutine(id){S.routines=S.routines.filter(function(x){return x.id!==id;});renderRoutines();saveToday();}
+
+function renderChecklist(){
+  var items=S.checklist;
+  var done=items.filter(function(x){return x.done;}).length;
+  document.getElementById('checklistItems').innerHTML=items.length?items.map(function(i){
+    return '<div class="check-row"><div class="checkbox '+(i.done?'on':'')+'" onclick="toggleCheck('+i.id+')"><span class="chk-mark">✓</span></div>'
+      +'<span class="chk-label '+(i.done?'chk-done':'')+'">'+i.text+'</span>'
+      +'<button class="row-del" onclick="delCheck('+i.id+')">✕</button></div>';
+  }).join(''):'<div style="color:var(--ink-light);font-size:12px;font-style:italic;padding:8px 0">新增出門物品...</div>';
+  var pct=items.length?Math.round(done/items.length*100):0;
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progTxt').textContent=done+' / '+items.length+' 已確認';
+}
+function toggleCheck(id){var i=S.checklist.find(function(x){return x.id===id;});if(i)i.done=!i.done;renderChecklist();saveToday();}
+function delCheck(id){S.checklist=S.checklist.filter(function(x){return x.id!==id;});renderChecklist();saveToday();}
+function openAddCheck(){var t=prompt('新增物品：');if(t&&t.trim()){S.checklist.push({id:Date.now(),text:t.trim(),done:false});renderChecklist();saveToday();}}
+
+function renderHabits(){
+  document.getElementById('habitList').innerHTML=S.habits.map(function(h){
+    return '<div class="habit-row2"><button class="tiny-btn del-t" onclick="delHabit('+h.id+')">✕</button>'
+      +'<span class="habit-name2">'+h.name+'</span>'
+      +'<div class="hab-dot '+(h.am?'am':'')+'" onclick="toggleHabit('+h.id+',\'am\')">'+(h.am?'✓':'早')+'</div>'
+      +'<div style="width:8px"></div>'
+      +'<div class="hab-dot '+(h.pm?'pm':'')+'" onclick="toggleHabit('+h.id+',\'pm\')">'+(h.pm?'✓':'晚')+'</div></div>';
+  }).join('');
+}
+function toggleHabit(id,t){var h=S.habits.find(function(x){return x.id===id;});if(h)h[t]=!h[t];renderHabits();saveToday();}
+function delHabit(id){S.habits=S.habits.filter(function(x){return x.id!==id;});renderHabits();saveToday();}
+
+function renderShower(){
+  document.getElementById('showerGrid').innerHTML=S.shower.map(function(s){
+    return '<div class="shower-item '+(s.done?'on':'')+'" onclick="toggleShower('+s.id+')">'
+      +'<span class="shower-icon">'+s.icon+'</span><div class="shower-name">'+s.name+'</div></div>';
+  }).join('');
+}
+function toggleShower(id){var s=S.shower.find(function(x){return x.id===id;});if(s)s.done=!s.done;renderShower();saveToday();}
+
+function renderSkincare(){
+  document.getElementById('faceSkincareWrap').innerHTML=S.faceSkincare.map(function(p){
+    return '<div class="sc-item-row"><span class="sc-cat-name">'+p.cat+'</span>'
+      +'<input class="sc-brand-inp" value="'+(p.brand||'')+'" placeholder="今天哪個品牌？" oninput="updateFaceBrand('+p.id+',this.value)">'
+      +'<div class="sc-time-dots">'
+      +'<div class="sc-dot '+(p.am?'am-on':'')+'" onclick="toggleFaceSc('+p.id+',\'am\')">'+(p.am?'✓':'早')+'</div>'
+      +'<div class="sc-dot '+(p.pm?'pm-on':'')+'" onclick="toggleFaceSc('+p.id+',\'pm\')">'+(p.pm?'✓':'晚')+'</div>'
+      +'</div><button class="sc-del" onclick="delFaceSc('+p.id+')">✕</button></div>';
+  }).join('');
+  document.getElementById('bodySkincareWrap').innerHTML=S.bodySkincare.map(function(p){
+    return '<div class="sc-item-row"><div class="sc-toggle '+(p.used?'on':'')+'" onclick="toggleBodySc('+p.id+')">'+(p.used?'✓':'○')+'</div>'
+      +'<span class="sc-cat-name">'+p.cat+'</span>'
+      +'<input class="sc-brand-inp" value="'+(p.brand||'')+'" placeholder="今天哪個品牌？" oninput="updateBodyBrand('+p.id+',this.value)">'
+      +'<button class="sc-del" onclick="delBodySc('+p.id+')">✕</button></div>';
+  }).join('');
+}
+function toggleFaceSc(id,t){var p=S.faceSkincare.find(function(x){return x.id===id;});if(p)p[t]=!p[t];renderSkincare();saveToday();}
+function updateFaceBrand(id,v){var p=S.faceSkincare.find(function(x){return x.id===id;});if(p)p.brand=v;saveToday();}
+function delFaceSc(id){S.faceSkincare=S.faceSkincare.filter(function(x){return x.id!==id;});renderSkincare();saveToday();}
+function toggleBodySc(id){var p=S.bodySkincare.find(function(x){return x.id===id;});if(p)p.used=!p.used;renderSkincare();saveToday();}
+function updateBodyBrand(id,v){var p=S.bodySkincare.find(function(x){return x.id===id;});if(p)p.brand=v;saveToday();}
+function delBodySc(id){S.bodySkincare=S.bodySkincare.filter(function(x){return x.id!==id;});renderSkincare();saveToday();}
+
+// ARCHIVE
+function renderArchive(){
+  var y=archiveYear,m=archiveMonth;
+  var mNames=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  document.getElementById('monthLabel').textContent=y+'年 '+mNames[m];
+  var daysInMonth=new Date(y,m+1,0).getDate();
+  var firstDow=new Date(y,m,1).getDay();
+  var totalR=0,totalH=0,activeDays=0;
+  for(var d=1;d<=daysInMonth;d++){
+    var ds=fmtDate(new Date(y,m,d));
+    var rec=S.archive[ds];
+    if(rec&&(rec.routines.length||rec.habits.length))activeDays++;
+    if(rec){totalR+=rec.routines.length;totalH+=rec.habits.length;}
+  }
+  var streak=calcStreak(y,m,daysInMonth);
+  document.getElementById('statsGrid').innerHTML=
+    '<div class="stat-card"><div class="stat-num">'+activeDays+'</div><div class="stat-lbl">活躍天數</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+totalR+'</div><div class="stat-lbl">Routine 次</div></div>'
+    +'<div class="stat-card"><div class="stat-num">'+streak+'</div><div class="stat-lbl">連續打卡</div></div>';
+  document.getElementById('calHeader').innerHTML=['日','一','二','三','四','五','六'].map(function(dn){return '<div class="cal-day-name">'+dn+'</div>';}).join('');
+  var cells='';
+  for(var i=0;i<firstDow;i++)cells+='<div class="cal-cell empty"></div>';
+  for(var d=1;d<=daysInMonth;d++){
+    var ds=fmtDate(new Date(y,m,d));
+    var rec=S.archive[ds];
+    var isToday=ds===todayStr;
+    var isSel=ds===selectedDateStr;
+    var rCount=rec?rec.routines.length:0;
+    var hCount=rec?rec.habits.length:0;
+    var dots='';
+    for(var j=0;j<Math.min(rCount,3);j++)dots+='<span class="cal-dot dot-r"></span>';
+    for(var j=0;j<Math.min(hCount,3);j++)dots+='<span class="cal-dot dot-h"></span>';
+    var hasBg=rCount>0||hCount>0;
+    cells+='<div class="cal-cell'+(isToday?' today':'')+(isSel?' selected':'')+(hasBg?' has-data':'')+'" data-ds="'+ds+'">'
+      +'<div class="cal-num">'+d+'</div>'
+      +'<div class="cal-dots">'+dots+'</div>'
+      +'</div>';
+  }
+  document.getElementById('calGrid').innerHTML=cells;
+  document.getElementById('calGrid').querySelectorAll('.cal-cell:not(.empty)').forEach(function(cell){
+    cell.addEventListener('click',function(){showDetail(this.getAttribute('data-ds'));});
+  });
+  if(selectedDateStr)showDetail(selectedDateStr);
+}
+function calcStreak(y,m,dim){
+  var streak=0;
+  for(var d=dim;d>=1;d--){
+    var ds=fmtDate(new Date(y,m,d));
+    if(ds>todayStr)continue;
+    var rec=S.archive[ds];
+    if(rec&&(rec.routines.length||rec.habits.length))streak++;
+    else break;
+  }
+  return streak;
+}
+function showDetail(ds){
+  selectedDateStr=ds;
+  document.getElementById('calGrid').querySelectorAll('.cal-cell').forEach(function(c){
+    c.classList.toggle('selected',c.getAttribute('data-ds')===ds);
+  });
+  var rec=S.archive[ds];
+  var panel=document.getElementById('detailPanel');
+  var isFuture=ds>todayStr;
+  var html='<div class="detail-date"><span>'+fmtLabel(ds)+' 的紀錄</span>'
+    +(!isFuture?'<button class="edit-day-btn" onclick="openEdit(\''+ds+'\')">✏ 編輯 / 補記</button>':'')+'</div>';
+  if(!rec||(!rec.routines.length&&!rec.habits.length&&!rec.shower.length)){
+    html+='<div style="color:var(--ink-light);font-size:12px;font-style:italic;padding:8px 0">這天沒有紀錄。'+(isFuture?'':'點擊「編輯 / 補記」新增。')+'</div>';
+    panel.innerHTML=html;return;
+  }
+  if(rec.routines&&rec.routines.length){
+    html+='<div class="detail-section"><div class="detail-section-label">完成 Routine</div>';
+    var gp={morning:[],noon:[],evening:[]};
+    rec.routines.forEach(function(r){(gp[r.period]||gp.morning).push(r);});
+    periodOrder.forEach(function(per){
+      if(!gp[per].length)return;
+      html+='<div style="margin-bottom:10px"><div style="font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-light);margin-bottom:5px">'+periodLabel[per]+'</div>';
+      html+='<div style="position:relative;padding-left:16px;border-left:2px solid var(--sage-mid)">';
+      gp[per].forEach(function(r){
+        html+='<div class="det-routine-card">'
+          +'<div class="det-routine-top"><span class="tl-type-badge '+getBadgeClass(r.type)+'">'+getTypeLabel(r.type)+'</span>'
+          +'<span style="font-size:13px;font-weight:500;color:var(--ink)">'+r.name+'</span>'
+          +'<span style="font-size:11px;color:var(--ink-light);margin-left:auto">'+(r.time||'')+'</span></div>'
+          +((r.notes||r.improve)?'<div class="det-tl-line">'
+          +(r.notes?'<div class="det-tl-col"><div class="det-tl-label">紀錄</div><div class="det-tl-val">'+r.notes+'</div></div>':'')
+          +(r.improve?'<div class="det-tl-col"><div class="det-tl-label">待改善</div><div class="det-tl-val" style="color:var(--blush-dk)">'+r.improve+'</div></div>':'')
+          +'</div>':'')
+          +'</div>';
+      });
+      html+='</div></div>';
+    });
+    html+='</div>';
+  }
+  if(rec.habits&&rec.habits.length){
+    html+='<div class="detail-section"><div class="detail-section-label">洗漱習慣</div>';
+    html+=rec.habits.map(function(h){return '<span class="chip chip-sage">'+h.name+(h.am&&h.pm?' (早+晚)':h.am?' (早)':' (晚)')+'</span>';}).join('');
+    html+='</div>';
+  }
+  if(rec.shower&&rec.shower.length){
+    html+='<div class="detail-section"><div class="detail-section-label">洗澡</div>';
+    html+=rec.shower.map(function(s){return '<span class="chip chip-blush">'+s+'</span>';}).join('');
+    html+='</div>';
+  }
+  if((rec.face&&rec.face.length)||(rec.body&&rec.body.length)){
+    html+='<div class="detail-section"><div class="detail-section-label">保養品</div>';
+    (rec.face||[]).forEach(function(p){var t=p.am&&p.pm?'早+晚':p.am?'早':p.pm?'晚':'';html+='<span class="chip chip-gold">臉·'+p.cat+(p.brand?' ('+p.brand+')':'')+(t?' ['+t+']':'')+'</span>';});
+    (rec.body||[]).forEach(function(p){html+='<span class="chip chip-blush">身·'+p.cat+(p.brand?' ('+p.brand+')':'')+'</span>';});
+    html+='</div>';
+  }
+  panel.innerHTML=html;
+}
+
+// EDIT OVERLAY
+var editState={};
+function openEdit(ds){
+  editingDateStr=ds;
+  var rec=S.archive[ds]||{routines:[],habits:[],shower:[],face:[],body:[]};
+  editState=JSON.parse(JSON.stringify(rec));
+  if(!editState.routines)editState.routines=[];
+  if(!editState.habits)editState.habits=[];
+  if(!editState.shower)editState.shower=[];
+  if(!editState.face)editState.face=[];
+  if(!editState.body)editState.body=[];
+  document.getElementById('editPanelTitle').textContent='補記 / 編輯：'+fmtLabel(ds);
+  renderEditPanel();
+  document.getElementById('editOverlay').classList.add('open');
+}
+function closeEdit(){document.getElementById('editOverlay').classList.remove('open');editingDateStr=null;}
+function saveEdit(){
+  if(editingDateStr){S.archive[editingDateStr]=JSON.parse(JSON.stringify(editState));renderArchive();}
+  closeEdit();
+}
+function renderEditPanel(){
+  var habitTpls=S.habits.map(function(h){return h.name;});
+  var showerTpls=S.shower.map(function(s){return s.name;});
+  var faceTpls=S.faceSkincare.map(function(p){return p.cat;});
+  var bodyTpls=S.bodySkincare.map(function(p){return p.cat;});
+  function inpStyle(){return 'border:1px solid var(--border-mid);border-radius:7px;padding:5px 8px;font-size:12px;font-family:inherit;background:var(--paper);color:var(--ink);outline:none;';}
+  var html='<div style="margin-bottom:14px"><div class="detail-section-label" style="margin-bottom:8px">Routine 紀錄</div>';
+  editState.routines.forEach(function(r,i){
+    html+='<div style="background:var(--warm);border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:8px">'
+      +'<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:7px;align-items:center">'
+      +'<input style="flex:1;min-width:90px;'+inpStyle()+'" value="'+r.name+'" placeholder="Routine名稱" oninput="editState.routines['+i+'].name=this.value">'
+      +'<select style="'+inpStyle()+'cursor:pointer;" onchange="editState.routines['+i+'].period=this.value">'
+      +periodOrder.map(function(p){return '<option value="'+p+'"'+(r.period===p?' selected':'')+'>'+periodLabel[p]+'</option>';}).join('')
+      +'</select>'
+      +'<input type="time" style="'+inpStyle()+'" value="'+(r.time||'')+'" onchange="editState.routines['+i+'].time=this.value">'
+      +'<button onclick="editState.routines.splice('+i+',1);renderEditPanel()" style="border:none;background:transparent;cursor:pointer;color:var(--blush-deep);font-size:16px;line-height:1">✕</button>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">'
+      +'<div><div class="field-label" style="margin-bottom:3px">今日紀錄</div><textarea style="width:100%;border:1px solid var(--border);background:var(--paper);border-radius:7px;padding:6px 8px;font-size:11px;color:var(--ink-mid);resize:none;font-family:inherit;min-height:44px;outline:none" placeholder="做了什麼..." oninput="editState.routines['+i+'].notes=this.value">'+( r.notes||'')+'</textarea></div>'
+      +'<div><div class="field-label" style="margin-bottom:3px">待改善</div><textarea style="width:100%;border:1px solid var(--border);background:var(--paper);border-radius:7px;padding:6px 8px;font-size:11px;color:var(--ink-mid);resize:none;font-family:inherit;min-height:44px;outline:none" placeholder="待加強..." oninput="editState.routines['+i+'].improve=this.value">'+(r.improve||'')+'</textarea></div>'
+      +'</div></div>';
+  });
+  html+='<button class="add-btn" style="margin-top:4px" onclick="editState.routines.push({id:Date.now(),name:\'\',type:\'other\',period:\'morning\',time:\'\',notes:\'\',improve:\'\'});renderEditPanel()">＋ 新增 Routine</button></div>';
+  html+='<div style="margin-bottom:14px"><div class="detail-section-label" style="margin-bottom:8px">洗漱習慣</div>';
+  editState.habits.forEach(function(h,i){
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'
+      +'<input style="flex:1;border:none;background:transparent;font-size:13px;font-family:inherit;color:var(--ink-mid);outline:none" value="'+h.name+'" oninput="editState.habits['+i+'].name=this.value">'
+      +'<div class="hab-dot '+(h.am?'am':'')+'" onclick="editState.habits['+i+'].am=!editState.habits['+i+'].am;renderEditPanel()">'+(h.am?'✓':'早')+'</div>'
+      +'<div class="hab-dot '+(h.pm?'pm':'')+'" onclick="editState.habits['+i+'].pm=!editState.habits['+i+'].pm;renderEditPanel()">'+(h.pm?'✓':'晚')+'</div>'
+      +'<button onclick="editState.habits.splice('+i+',1);renderEditPanel()" style="border:none;background:transparent;cursor:pointer;color:var(--blush-deep);font-size:14px">✕</button></div>';
+  });
+  var existH=editState.habits.map(function(h){return h.name;});
+  var addH=habitTpls.filter(function(n){return existH.indexOf(n)<0;});
+  if(addH.length){html+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">'+addH.map(function(n){return '<span style="font-size:11px;background:var(--paper);border:1px solid var(--border-mid);border-radius:10px;padding:2px 9px;cursor:pointer;color:var(--ink-mid)" onclick="editState.habits.push({name:\''+n+'\',am:false,pm:false});renderEditPanel()">＋'+n+'</span>';}).join('')+'</div>';}
+  html+='</div>';
+  html+='<div style="margin-bottom:14px"><div class="detail-section-label" style="margin-bottom:8px">洗澡</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+  showerTpls.forEach(function(sn){
+    var on=editState.shower.indexOf(sn)>=0;
+    html+='<span style="font-size:12px;border:1px solid '+(on?'var(--sage-mid)':'var(--border)')+';background:'+(on?'var(--sage-light)':'var(--paper)')+';color:'+(on?'var(--sage-dark)':'var(--ink-mid)')+';border-radius:8px;padding:4px 11px;cursor:pointer" onclick="toggleEditShower(\''+sn+'\')">'+sn+'</span>';
+  });
+  html+='</div></div>';
+  html+='<div style="margin-bottom:14px"><div class="detail-section-label" style="margin-bottom:8px">臉部保養</div>';
+  editState.face.forEach(function(p,i){
+    html+='<div class="sc-item-row"><span class="sc-cat-name">'+p.cat+'</span>'
+      +'<input class="sc-brand-inp" value="'+(p.brand||'')+'" placeholder="品牌" oninput="editState.face['+i+'].brand=this.value">'
+      +'<div class="sc-time-dots"><div class="sc-dot '+(p.am?'am-on':'')+'" onclick="editState.face['+i+'].am=!editState.face['+i+'].am;renderEditPanel()">'+(p.am?'✓':'早')+'</div>'
+      +'<div class="sc-dot '+(p.pm?'pm-on':'')+'" onclick="editState.face['+i+'].pm=!editState.face['+i+'].pm;renderEditPanel()">'+(p.pm?'✓':'晚')+'</div></div>'
+      +'<button onclick="editState.face.splice('+i+',1);renderEditPanel()" style="border:none;background:transparent;cursor:pointer;color:var(--blush-deep);font-size:13px;opacity:0.7">✕</button></div>';
+  });
+  var existF=editState.face.map(function(p){return p.cat;});
+  var addF=faceTpls.filter(function(n){return existF.indexOf(n)<0;});
+  if(addF.length){html+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">'+addF.map(function(n){return '<span style="font-size:11px;background:var(--paper);border:1px solid var(--border-mid);border-radius:10px;padding:2px 9px;cursor:pointer;color:var(--ink-mid)" onclick="editState.face.push({cat:\''+n+'\',brand:\'\',am:false,pm:false});renderEditPanel()">＋'+n+'</span>';}).join('')+'</div>';}
+  html+='</div>';
+  html+='<div style="margin-bottom:6px"><div class="detail-section-label" style="margin-bottom:8px">身體保養</div>';
+  editState.body.forEach(function(p,i){
+    html+='<div class="sc-item-row"><div class="sc-toggle '+(p.used?'on':'')+'" onclick="editState.body['+i+'].used=!editState.body['+i+'].used;renderEditPanel()">'+(p.used?'✓':'○')+'</div>'
+      +'<span class="sc-cat-name">'+p.cat+'</span>'
+      +'<input class="sc-brand-inp" value="'+(p.brand||'')+'" placeholder="品牌" oninput="editState.body['+i+'].brand=this.value">'
+      +'<button onclick="editState.body.splice('+i+',1);renderEditPanel()" style="border:none;background:transparent;cursor:pointer;color:var(--blush-deep);font-size:13px;opacity:0.7">✕</button></div>';
+  });
+  var existB=editState.body.map(function(p){return p.cat;});
+  var addB=bodyTpls.filter(function(n){return existB.indexOf(n)<0;});
+  if(addB.length){html+='<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:7px">'+addB.map(function(n){return '<span style="font-size:11px;background:var(--paper);border:1px solid var(--border-mid);border-radius:10px;padding:2px 9px;cursor:pointer;color:var(--ink-mid)" onclick="editState.body.push({cat:\''+n+'\',brand:\'\',used:false});renderEditPanel()">＋'+n+'</span>';}).join('')+'</div>';}
+  html+='</div>';
+  document.getElementById('editPanelBody').innerHTML=html;
+}
+function toggleEditShower(name){var idx=editState.shower.indexOf(name);if(idx>=0)editState.shower.splice(idx,1);else editState.shower.push(name);renderEditPanel();}
+document.getElementById('editOverlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeEdit();});
+
+// MODAL
+var curModal='';
+function refreshTypeSelect(){
+  var sel=document.getElementById('mType');
+  var opts=getTypeOpts();
+  sel.innerHTML=Object.keys(opts).map(function(k){return '<option value="'+k+'">'+opts[k]+'</option>';}).join('');
+}
+function openModal(type){
+  curModal=type;
+  var titles={addRoutine:'新增 Routine',addHabit:'新增洗漱習慣',addShower:'新增洗澡項目',addFace:'新增臉部保養品項',addBody:'新增身體保養品項'};
+  document.getElementById('modalTitle').textContent=titles[type]||'新增';
+  document.getElementById('mIn1').value='';
+  var isR=type==='addRoutine';
+  document.getElementById('mIn1').placeholder=isR?'Routine 名稱':type==='addHabit'?'習慣名稱':type==='addShower'?'項目名稱':'品項類別（例如：精華油）';
+  document.getElementById('customTypeArea').style.display=isR?'block':'none';
+  document.getElementById('mSel').style.display=isR?'block':'none';
+  document.getElementById('mType').style.display=isR?'block':'none';
+  if(isR)refreshTypeSelect();
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(function(){document.getElementById('mIn1').focus();},80);
+}
+function addCustomType(){
+  var inp=document.getElementById('customTypeInp');
+  var val=inp.value.trim();
+  if(!val)return;
+  var key='c_'+Date.now();
+  S.customTypes[key]=val;
+  inp.value='';
+  refreshTypeSelect();
+  document.getElementById('mType').value=key;
+}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function confirmModal(){
+  var name=document.getElementById('mIn1').value.trim();
+  if(!name)return;
+  var id=Date.now();
+  if(curModal==='addRoutine'){S.routines.push({id:id,name:name,type:document.getElementById('mType').value,period:document.getElementById('mSel').value,time:'08:00',notes:'',improve:''});renderRoutines();}
+  else if(curModal==='addHabit'){S.habits.push({id:id,name:name,am:false,pm:false});renderHabits();}
+  else if(curModal==='addShower'){S.shower.push({id:id,name:name,icon:'✧',done:false});renderShower();}
+  else if(curModal==='addFace'){S.faceSkincare.push({id:id,cat:name,brand:'',am:false,pm:false});renderSkincare();}
+  else if(curModal==='addBody'){S.bodySkincare.push({id:id,cat:name,brand:'',used:false});renderSkincare();}
+  saveToday();closeModal();
+}
+document.getElementById('mIn1').addEventListener('keydown',function(e){if(e.key==='Enter')confirmModal();});
+document.getElementById('modalOverlay').addEventListener('click',function(e){if(e.target===e.currentTarget)closeModal();});
+
+function prevMonth(){archiveMonth--;if(archiveMonth<0){archiveMonth=11;archiveYear--;}selectedDateStr=null;renderArchive();}
+function nextMonth(){archiveMonth++;if(archiveMonth>11){archiveMonth=0;archiveYear++;}selectedDateStr=null;renderArchive();}
+
+renderAll();
+
+// ── Firebase 同步（等登入完成後執行）──
+window.addEventListener('tripapp:ready', async function(e) {
+  try {
+    var fb = await import('./firebase-config.js');
+    var uid = e.detail.user.uid;
+    var DOC = 'users/' + uid + '/data/routine';
+    var _origSaveToday = saveToday;
+    saveToday = function() {
+      _origSaveToday();
+      if (window._fbSave) window._fbSave();
+    };
+    window._fbSave = async function() {
+      await fb.fsSet(DOC, { S: S });
+    };
+    var snap = await fb.fsGet(DOC);
+    if (snap.exists()) {
+      var d = snap.data();
+      if (d.S) {
+        S = Object.assign(S, d.S);
+        renderAll();
+      }
+    }
+  } catch(err) {
+    window._fbSave = null;
+  }
+});
+</script>
+</body>
+</html>

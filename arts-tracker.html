@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Kinia · 藝文記錄</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f8f5f0;--bg2:#f0ebe2;--bg3:#e5ddd1;--bg4:#d9cfbf;
+  --card:#fffdf9;--border:rgba(100,80,50,0.10);--border2:rgba(100,80,50,0.20);
+  --ink:#2a2218;--ink2:#6b5c45;--ink3:#a8967e;--ink4:#c4b09a;
+  --rose:#b54a5c;--rose2:#8f3347;--rose-bg:rgba(181,74,92,0.09);
+  --teal:#2e8070;--teal2:#1f6057;--teal-bg:rgba(46,128,112,0.09);
+  --amber:#c47a28;--amber-bg:rgba(196,122,40,0.10);
+  --slate:#4a6080;--slate-bg:rgba(74,96,128,0.09);
+  --film:#7a5298;--film-bg:rgba(122,82,152,0.09);
+  --radius:16px;--radius-sm:10px;
+  --sh:0 1px 8px rgba(42,34,24,0.06),0 0 0 0.5px rgba(100,80,50,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;max-width:430px;margin:0 auto;overflow-x:hidden;}
+
+.header{position:sticky;top:0;z-index:100;background:var(--bg);border-bottom:0.5px solid var(--border2);padding:14px 18px 11px;}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;}
+.logo{display:flex;align-items:baseline;gap:9px;}
+.logo-mark{font-family:'Cormorant Garamond',serif;font-size:27px;font-weight:600;color:var(--rose);line-height:1;}
+.logo-text{font-family:'Noto Serif TC',serif;font-size:11px;color:var(--ink3);letter-spacing:3px;font-weight:300;}
+.btn-add{width:36px;height:36px;border-radius:50%;background:var(--rose);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:all 0.15s;box-shadow:0 2px 8px rgba(181,74,92,0.35);}
+.btn-add svg{width:16px;height:16px;}
+.btn-add:active{transform:scale(0.9);background:var(--rose2);}
+
+.tabs{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;padding:5px 12px;border-radius:20px;border:0.5px solid var(--border2);background:transparent;color:var(--ink2);font-size:11.5px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;transition:all 0.18s;white-space:nowrap;}
+.tab.active{background:var(--rose);border-color:var(--rose);color:#fff;}
+.tab[data-cat="theater"].active{background:var(--slate);border-color:var(--slate);color:#fff;}
+.tab[data-cat="arts"].active{background:var(--teal);border-color:var(--teal);color:#fff;}
+.tab[data-cat="pending"].active{background:var(--amber);border-color:var(--amber);color:#fff;}
+.tab[data-cat="film"].active{background:var(--film);border-color:var(--film);color:#fff;}
+
+.sortbar{display:flex;align-items:center;justify-content:space-between;padding:8px 18px;border-bottom:0.5px solid var(--border);}
+.sort-label{font-size:10.5px;color:var(--ink4);letter-spacing:1px;}
+.sort-btns{display:flex;gap:3px;}
+.sort-btn{padding:3px 9px;border-radius:5px;border:0.5px solid var(--border2);background:transparent;color:var(--ink2);font-size:10.5px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;transition:all 0.13s;}
+.sort-btn.active{background:var(--bg3);color:var(--ink);}
+
+.list{padding:10px 14px 100px;display:flex;flex-direction:column;gap:9px;}
+
+.card{background:var(--card);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:box-shadow 0.2s,transform 0.13s;position:relative;box-shadow:var(--sh);}
+.card:active{transform:scale(0.984);}
+.card.pend-card{border:1px dashed rgba(196,122,40,0.38);box-shadow:none;}
+.stripe{position:absolute;left:0;top:0;bottom:0;width:3.5px;}
+.cat-concert .stripe{background:var(--rose);}
+.cat-theater .stripe{background:var(--slate);}
+.cat-arts .stripe{background:var(--teal);}
+.cat-pending .stripe{background:var(--amber);}
+.cat-film .stripe{background:var(--film);}
+
+.card-inner{padding:12px 12px 12px 18px;}
+.card-top{display:flex;align-items:flex-start;margin-bottom:7px;}
+
+.date-col{text-align:center;min-width:46px;flex-shrink:0;}
+.d-mon{font-size:9.5px;color:var(--ink4);letter-spacing:2px;text-transform:uppercase;}
+.d-day{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:600;color:var(--rose);line-height:0.88;margin:1px 0;}
+.d-wd{font-size:9.5px;color:var(--ink4);}
+.d-multi{font-size:9px;color:var(--slate);margin-top:3px;background:var(--slate-bg);border-radius:3px;padding:1px 5px;display:inline-block;}
+
+.pend-col{min-width:46px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:4px;gap:4px;}
+.pend-lbl{font-size:9px;color:var(--amber);letter-spacing:0.5px;font-weight:500;}
+
+.card-info{flex:1;padding-left:11px;}
+.badges{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px;align-items:center;}
+.cb{font-size:9.5px;padding:1.5px 6px;border-radius:3px;letter-spacing:0.3px;}
+.cat-concert .cb{background:var(--rose-bg);color:var(--rose);}
+.cat-theater .cb{background:var(--slate-bg);color:var(--slate);}
+.cat-arts .cb{background:var(--teal-bg);color:var(--teal);}
+.cat-pending .cb{background:var(--amber-bg);color:var(--amber);}
+.cat-film .cb{background:var(--film-bg);color:var(--film);}
+.trip-b{font-size:9.5px;padding:1.5px 6px;border-radius:3px;background:rgba(74,96,128,0.08);color:var(--slate);}
+.pend-b{font-size:9.5px;padding:1.5px 6px;border-radius:3px;background:var(--amber-bg);color:var(--amber);}
+.card-title{font-family:'Noto Serif TC',serif;font-size:15.5px;font-weight:500;color:var(--ink);line-height:1.3;}
+.card-artist{font-size:11.5px;color:var(--ink2);margin-top:2px;}
+
+.card-foot{display:flex;align-items:flex-start;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border);}
+.meta{font-size:10.5px;color:var(--ink4);display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.meta svg{width:11px;height:11px;opacity:0.55;flex-shrink:0;}
+.actions{display:flex;gap:5px;align-items:center;}
+.ib{width:27px;height:27px;border-radius:7px;background:transparent;border:0.5px solid var(--border2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink3);transition:all 0.13s;}
+.ib:hover{background:var(--bg2);}
+.ib svg{width:12px;height:12px;}
+.tl-cnt{font-size:10px;color:var(--ink4);padding:3px 7px;background:var(--bg2);border-radius:5px;}
+.card-note{font-size:10.5px;color:var(--ink4);margin-top:4px;font-style:italic;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* PANEL */
+.pov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0);pointer-events:none;transition:background 0.28s;}
+.pov.open{background:rgba(42,34,24,0.5);pointer-events:all;}
+.panel{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:430px;z-index:201;background:var(--card);border-radius:22px 22px 0 0;border-top:0.5px solid var(--border2);transition:transform 0.34s cubic-bezier(0.32,0.72,0,1);max-height:91vh;display:flex;flex-direction:column;}
+.panel.open{transform:translateX(-50%) translateY(0);}
+.hdl{width:38px;height:3.5px;background:var(--bg4);border-radius:2px;margin:11px auto 0;}
+.ph{padding:13px 18px 11px;border-bottom:0.5px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;}
+.pt{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:var(--ink);line-height:1.2;margin-bottom:2px;}
+.ps{font-size:12px;color:var(--ink2);}
+.pcl{width:30px;height:30px;border-radius:50%;background:var(--bg2);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:16px;margin-left:10px;flex-shrink:0;transition:background 0.13s;}
+.pcl:hover{background:var(--bg3);}
+.pds{padding:10px 18px;border-bottom:0.5px solid var(--border);}
+.pd-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:5px;}
+.pd-big{font-family:'Cormorant Garamond',serif;font-size:46px;font-weight:600;color:var(--rose);line-height:0.88;}
+.pd-info{padding-bottom:2px;}
+.pd-full{font-size:13px;color:var(--ink);font-weight:500;}
+.pd-time{font-size:12px;color:var(--ink2);margin-top:2px;}
+.pd-venue{font-size:11.5px;color:var(--ink3);margin-top:1px;}
+.trip-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.tpill{font-size:10px;padding:2px 9px;border-radius:20px;border:0.5px solid;display:flex;align-items:center;gap:4px;}
+.tpill.bef{background:rgba(74,96,128,0.07);border-color:rgba(74,96,128,0.2);color:var(--slate);}
+.tpill.main{background:var(--rose-bg);border-color:rgba(181,74,92,0.22);color:var(--rose);}
+.tpill.aft{background:var(--teal-bg);border-color:rgba(46,128,112,0.2);color:var(--teal);}
+.pb{overflow-y:auto;flex:1;padding:14px 18px 32px;}
+
+/* timeline */
+.tl-sec{margin-bottom:16px;}
+.tl-dhd{display:flex;align-items:center;gap:7px;margin-bottom:10px;}
+.tl-dpill{font-size:10px;font-weight:500;padding:2px 9px;border-radius:12px;letter-spacing:0.3px;white-space:nowrap;}
+.dpc-bef{background:rgba(74,96,128,0.10);color:var(--slate);}
+.dpc-main{background:var(--rose-bg);color:var(--rose);}
+.dpc-aft{background:var(--teal-bg);color:var(--teal);}
+.tl-dlbl{font-size:10.5px;color:var(--ink4);}
+.tl-dline{flex:1;height:0.5px;background:var(--border2);}
+
+.abar{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+.slbl{font-size:10.5px;color:var(--ink3);letter-spacing:1.5px;}
+.btn-as{padding:4px 11px;border-radius:16px;background:transparent;border:0.5px solid var(--border2);color:var(--rose);font-size:10.5px;font-family:'Noto Sans TC',sans-serif;cursor:pointer;transition:all 0.13s;}
+.btn-as:hover{background:var(--rose-bg);}
+
+.aform{background:var(--bg2);border:0.5px solid var(--border2);border-radius:10px;padding:11px;margin-bottom:13px;display:none;}
+.aform.open{display:block;}
+.fr{display:flex;gap:6px;margin-bottom:6px;}
+.fi{flex:1;background:var(--card);border:0.5px solid var(--border2);border-radius:7px;padding:7px 9px;color:var(--ink);font-size:12px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:border-color 0.13s;}
+.fi:focus{border-color:var(--rose);}
+.fi::placeholder{color:var(--ink4);}
+.fi.ti{max-width:72px;flex:none;}
+.fi.di{max-width:96px;flex:none;}
+.fb{display:flex;gap:5px;justify-content:flex-end;margin-top:2px;}
+.fok{padding:5px 14px;border-radius:7px;background:var(--rose);border:none;cursor:pointer;color:#fff;font-size:11.5px;font-family:'Noto Sans TC',sans-serif;font-weight:500;}
+.fno{padding:5px 12px;border-radius:7px;background:transparent;border:0.5px solid var(--border2);cursor:pointer;color:var(--ink2);font-size:11.5px;font-family:'Noto Sans TC',sans-serif;}
+
+.tl{position:relative;padding-left:20px;min-height:16px;}
+.tl::before{content:'';position:absolute;left:5px;top:8px;bottom:4px;width:0.5px;background:var(--border2);}
+.tli{position:relative;margin-bottom:11px;}
+.tld{position:absolute;left:-20px;top:4px;width:11px;height:11px;border-radius:50%;border:1.5px solid var(--rose);background:var(--card);}
+.tld::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:4px;border-radius:50%;background:var(--rose);}
+.tld.bef{border-color:var(--slate);}
+.tld.bef::after{background:var(--slate);}
+.tld.aft{border-color:var(--teal);}
+.tld.aft::after{background:var(--teal);}
+.tlin{background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:7px 9px;display:flex;align-items:flex-start;gap:8px;}
+.tlt{min-width:34px;font-size:10.5px;color:var(--rose);font-weight:500;line-height:1.3;flex-shrink:0;}
+.tlt.bef{color:var(--slate);}
+.tlt.aft{color:var(--teal);}
+.tlc{flex:1;}
+.tlnm{font-size:12.5px;color:var(--ink);line-height:1.4;}
+.tlnt{font-size:10.5px;color:var(--ink3);margin-top:1px;font-style:italic;}
+.tlx{width:20px;height:20px;border-radius:5px;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink4);flex-shrink:0;transition:all 0.13s;}
+.tlx:hover{background:rgba(181,74,92,0.1);color:var(--rose);}
+.tlx svg{width:10px;height:10px;}
+.tl-emp{font-size:11.5px;color:var(--ink4);text-align:center;padding:12px 0;font-style:italic;}
+
+.notesec{margin-top:18px;}
+.seclbl{font-size:10.5px;color:var(--ink3);letter-spacing:1.5px;margin-bottom:8px;}
+.nta{width:100%;background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:9px 11px;color:var(--ink);font-size:12.5px;font-family:'Noto Serif TC',serif;line-height:1.8;min-height:70px;resize:none;outline:none;transition:border-color 0.13s;}
+.nta:focus{border-color:var(--rose);}
+.nta::placeholder{color:var(--ink4);font-style:italic;}
+
+/* MODAL */
+.mov{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0);pointer-events:none;transition:background 0.28s;}
+.mov.open{background:rgba(42,34,24,0.55);pointer-events:all;}
+.modal{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:430px;z-index:301;background:var(--card);border-radius:22px 22px 0 0;border-top:0.5px solid var(--border2);transition:transform 0.34s cubic-bezier(0.32,0.72,0,1);max-height:92vh;display:flex;flex-direction:column;}
+.modal.open{transform:translateX(-50%) translateY(0);}
+.mhd{padding:12px 18px 11px;border-bottom:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.mttl{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;color:var(--ink);}
+.mbdy{overflow-y:auto;flex:1;padding:14px 18px 8px;}
+.mft{padding:10px 18px 26px;border-top:0.5px solid var(--border);display:flex;gap:8px;}
+.bsv{flex:1;padding:12px;border-radius:11px;background:var(--rose);border:none;cursor:pointer;color:#fff;font-size:13.5px;font-family:'Noto Sans TC',sans-serif;font-weight:500;transition:all 0.13s;}
+.bsv:hover{background:var(--rose2);}
+.bno{flex:0.42;padding:12px;border-radius:11px;background:transparent;border:0.5px solid var(--border2);cursor:pointer;color:var(--ink2);font-size:13.5px;font-family:'Noto Sans TC',sans-serif;}
+.bdel{width:44px;flex:none;padding:12px;border-radius:11px;background:transparent;border:0.5px solid rgba(181,74,92,0.3);cursor:pointer;color:var(--rose);display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.bdel:hover{background:var(--rose-bg);}
+.bdel svg{width:16px;height:16px;}
+
+.fg{margin-bottom:14px;}
+.fg label{display:block;font-size:10.5px;color:var(--ink3);letter-spacing:1.2px;margin-bottom:5px;}
+.mfi{width:100%;background:var(--bg2);border:0.5px solid var(--border2);border-radius:9px;padding:9px 11px;color:var(--ink);font-size:13.5px;font-family:'Noto Sans TC',sans-serif;outline:none;transition:border-color 0.13s;}
+.mfi:focus{border-color:var(--rose);}
+.mfi::placeholder{color:var(--ink4);}
+.drow{display:flex;gap:7px;}
+.drow .mfi{flex:1;}
+
+.catsel{display:flex;gap:6px;flex-wrap:wrap;}
+.copt{flex:1;min-width:calc(50% - 3px);padding:8px 4px;border-radius:9px;text-align:center;border:0.5px solid var(--border2);background:transparent;cursor:pointer;transition:all 0.18s;font-size:11px;font-family:'Noto Sans TC',sans-serif;color:var(--ink2);}
+.copt[data-v="concert"].sel{background:var(--rose-bg);border-color:rgba(181,74,92,0.35);color:var(--rose);}
+.copt[data-v="theater"].sel{background:var(--slate-bg);border-color:rgba(74,96,128,0.35);color:var(--slate);}
+.copt[data-v="arts"].sel{background:var(--teal-bg);border-color:rgba(46,128,112,0.3);color:var(--teal);}
+.copt[data-v="film"].sel{background:var(--film-bg);border-color:rgba(122,82,152,0.35);color:var(--film);}
+
+.stsel{display:flex;gap:6px;}
+.sopt{flex:1;padding:8px 6px;border-radius:9px;text-align:center;border:0.5px solid var(--border2);background:transparent;cursor:pointer;transition:all 0.18s;font-size:11.5px;font-family:'Noto Sans TC',sans-serif;color:var(--ink2);}
+.sopt[data-s="confirmed"].sel{background:var(--teal-bg);border-color:rgba(46,128,112,0.3);color:var(--teal);}
+.sopt[data-s="pending"].sel{background:var(--amber-bg);border-color:rgba(196,122,40,0.3);color:var(--amber);}
+
+.daysel{display:flex;gap:5px;flex-wrap:wrap;}
+.dopt{padding:6px 11px;border-radius:9px;border:0.5px solid var(--border2);background:transparent;cursor:pointer;transition:all 0.16s;font-size:11px;font-family:'Noto Sans TC',sans-serif;color:var(--ink2);white-space:nowrap;}
+.dopt.sel{background:var(--slate-bg);border-color:rgba(74,96,128,0.35);color:var(--slate);}
+.dhint{margin-top:8px;font-size:10.5px;line-height:2.2;color:var(--ink3);}
+
+.pnote{background:var(--amber-bg);border:0.5px dashed rgba(196,122,40,0.38);border-radius:8px;padding:7px 11px;font-size:11px;color:var(--amber);margin-top:5px;display:none;}
+.pnote.show{display:block;}
+
+.toast{position:fixed;bottom:76px;left:50%;transform:translateX(-50%) translateY(16px);z-index:400;background:var(--ink);border-radius:11px;padding:9px 14px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:#fff;opacity:0;pointer-events:none;transition:all 0.22s;white-space:nowrap;}
+.toast.show{opacity:1;pointer-events:all;transform:translateX(-50%) translateY(0);}
+.tdel{padding:3px 11px;border-radius:5px;background:rgba(255,100,100,0.22);color:#ff9090;font-size:11.5px;cursor:pointer;border:none;font-family:'Noto Sans TC',sans-serif;}
+
+.empty{text-align:center;padding:56px 20px;color:var(--ink4);font-size:12.5px;line-height:2.4;}
+.eico{font-size:34px;margin-bottom:10px;opacity:0.4;}
+</style>
+</head>
+<body>
+<!-- 🔐 登入保護 + 導覽列 -->
+<script type="module" src="auth-guard.js"></script>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <span class="logo-mark">Kinia</span>
+      <span class="logo-text">藝文記錄</span>
+    </div>
+    <button class="btn-add" onclick="openAdd()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="2" x2="8" y2="14"/><line x1="2" y1="8" x2="14" y2="8"/></svg>
+    </button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-cat="all" onclick="setFilt('all',this)">全部</button>
+    <button class="tab" data-cat="concert" onclick="setFilt('concert',this)">🎵 演唱會</button>
+    <button class="tab" data-cat="theater" onclick="setFilt('theater',this)">🎭 舞台劇</button>
+    <button class="tab" data-cat="arts" onclick="setFilt('arts',this)">🎨 藝文</button>
+    <button class="tab" data-cat="film" onclick="setFilt('film',this)">🎬 電影</button>
+    <button class="tab" data-cat="pending" onclick="setFilt('pending',this)">🎟 待搶票</button>
+  </div>
+</div>
+
+<div class="sortbar">
+  <span class="sort-label">排序</span>
+  <div class="sort-btns">
+    <button class="sort-btn active" data-s="date" onclick="setSrt('date',this)">日期</button>
+    <button class="sort-btn" data-s="added" onclick="setSrt('added',this)">加入</button>
+    <button class="sort-btn" data-s="cat" onclick="setSrt('cat',this)">類別</button>
+  </div>
+</div>
+
+<div class="list" id="list"></div>
+
+<!-- PANEL -->
+<div class="pov" id="pov" onclick="closePnl()"></div>
+<div class="panel" id="panel">
+  <div class="hdl"></div>
+  <div class="ph">
+    <div style="flex:1">
+      <div id="pbdg" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:5px;"></div>
+      <div class="pt" id="pt"></div>
+      <div class="ps" id="ps"></div>
+    </div>
+    <button class="pcl" onclick="closePnl()">×</button>
+  </div>
+  <div class="pds" id="pds"></div>
+  <div class="pb" id="pb"></div>
+</div>
+
+<!-- MODAL -->
+<div class="mov" id="mov" onclick="closeMdl()"></div>
+<div class="modal" id="modal">
+  <div class="hdl"></div>
+  <div class="mhd">
+    <div class="mttl" id="mttl">新增活動</div>
+    <button class="pcl" onclick="closeMdl()">×</button>
+  </div>
+  <div class="mbdy">
+    <div class="fg"><label>活動名稱</label><input class="mfi" id="fT" placeholder="輸入活動名稱…"></div>
+    <div class="fg"><label>表演者 / 主辦</label><input class="mfi" id="fA" placeholder="演出者或藝術家"></div>
+    <div class="fg">
+      <label>類別</label>
+      <div class="catsel">
+        <button class="copt sel" data-v="concert" onclick="sCat('concert')">🎵 演唱會</button>
+        <button class="copt" data-v="theater" onclick="sCat('theater')">🎭 舞台劇</button>
+        <button class="copt" data-v="arts" onclick="sCat('arts')">🎨 藝文</button>
+        <button class="copt" data-v="film" onclick="sCat('film')">🎬 電影</button>
+      </div>
+    </div>
+    <div class="fg">
+      <label>票券狀態</label>
+      <div class="stsel">
+        <button class="sopt sel" data-s="confirmed" onclick="sSt('confirmed')">✓ 已購票</button>
+        <button class="sopt" data-s="pending" onclick="sSt('pending')">🎟 待搶票</button>
+      </div>
+      <div class="pnote" id="pnote">待搶票：日期確認前僅供參考，搶到票後記得更新狀態！</div>
+    </div>
+    <div class="fg">
+      <label>活動日期</label>
+      <div class="drow">
+        <input class="mfi" id="fD" type="date">
+        <input class="mfi" id="fTm" type="time" value="19:30" style="max-width:100px;flex:none;">
+      </div>
+    </div>
+    <div class="fg">
+      <label>行程天數 <span style="color:var(--ink4);font-weight:300;font-size:10px;">（外縣市活動可加入前後天）</span></label>
+      <div class="daysel" id="daysel">
+        <button class="dopt sel" data-d="0" onclick="sDays(this)">僅當天</button>
+        <button class="dopt" data-d="-1" onclick="sDays(this)">前一天出發</button>
+        <button class="dopt" data-d="+1" onclick="sDays(this)">後一天回程</button>
+        <button class="dopt" data-d="-1+1" onclick="sDays(this)">前一天＋後一天</button>
+        <button class="dopt" data-d="-2" onclick="sDays(this)">前兩天出發</button>
+        <button class="dopt" data-d="+2" onclick="sDays(this)">後兩天回程</button>
+        <button class="dopt" data-d="-2+1" onclick="sDays(this)">前兩天＋後一天</button>
+        <button class="dopt" data-d="-1+2" onclick="sDays(this)">前一天＋後兩天</button>
+        <button class="dopt" data-d="-2+2" onclick="sDays(this)">前後各兩天</button>
+      </div>
+      <div class="dhint" id="dhint"></div>
+    </div>
+    <div class="fg"><label>地點 / 場館</label><input class="mfi" id="fV" placeholder="場地名稱"></div>
+    <div class="fg"><label>票種 / 座位</label><input class="mfi" id="fSeat" placeholder="例：搖滾區 GA・VIP 貴賓席・R排 23號"></div>
+    <div class="fg"><label>購票平台</label><input class="mfi" id="fPlatform" placeholder="例：KKTIX・拓元・年代售票"></div>
+    <div class="fg"><label>取票超商</label><input class="mfi" id="fPickup" placeholder="例：全家・7-11，或「電子票券」"></div>
+    <div class="fg"><label>備忘錄</label><input class="mfi" id="fN" placeholder="其他備注…"></div>
+  </div>
+  <div class="mft">
+    <button class="bno" onclick="closeMdl()">取消</button>
+    <button class="bdel" id="mDelBtn" onclick="delFromEdit()" style="display:none">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="2,4 14,4"/><path d="M6 4V2h4v2M5 4l1 10h4l1-10"/></svg>
+    </button>
+    <button class="bsv" onclick="saveEv()">儲存</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="tmsg"></span><button class="tdel" id="tdel">刪除</button></div>
+
+<script>
+const WD=['日','一','二','三','四','五','六'];
+const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CLBL={concert:'演唱會',theater:'舞台劇',arts:'藝文活動',film:'電影'};
+
+let evs=JSON.parse(localStorage.getItem('mv3')||'[]');
+let filt='all',srt='date',pid=null,eid=null;
+let mcat='concert',mst='confirmed',mdays='0',ttm=null;
+
+if(!evs.length){
+  evs=[
+    {id:'1',title:'草東沒有派對 — 山海牛奶糖巡演',artist:'草東沒有派對',cat:'concert',status:'confirmed',
+     date:'2025-09-14',time:'18:30',venue:'台中洲際棒球場',seat:'搖滾區 GA',note:'記得帶耳塞',days:'-1',added:Date.now()-5e6,
+     tl:{'-1':[{id:'a1',t:'10:00',n:'搭高鐵前往台中'},{id:'a2',t:'13:00',n:'逢甲午餐'},{id:'a3',t:'15:00',n:'Check-in 飯店'}],
+         '0':[{id:'b1',t:'16:00',n:'前往洲際棒球場'},{id:'b2',t:'18:30',n:'演唱會開始'},{id:'b3',t:'22:00',n:'散場宵夜'}]}},
+    {id:'2',title:'歌劇魅影 40週年紀念版',artist:'The Phantom of the Opera',cat:'theater',status:'confirmed',
+     date:'2025-08-03',time:'14:00',venue:'國家戲劇院',seat:'二樓正中央 C排',note:'',days:'0',added:Date.now()-3e6,
+     tl:{'0':[{id:'c1',t:'12:30',n:'捷運中正紀念堂'},{id:'c2',t:'13:00',n:'購節目單'},{id:'c3',t:'14:00',n:'第一幕'},{id:'c4',t:'15:20',n:'中場休息',o:'約20分鐘'},{id:'c5',t:'16:40',n:'演出結束'}]}},
+    {id:'3',title:'奇美博物館 — 印象派特展',artist:'奇美博物館',cat:'arts',status:'confirmed',
+     date:'2025-06-21',time:'10:00',venue:'台南奇美博物館',seat:'',note:'預約早場，帶相機',days:'-1+1',added:Date.now()-1e6,
+     tl:{'-1':[{id:'d1',t:'14:00',n:'高鐵到台南'},{id:'d2',t:'16:00',n:'安平老街散步'}],
+         '0':[{id:'e1',t:'09:30',n:'前往奇美'},{id:'e2',t:'10:00',n:'特展入場'},{id:'e3',t:'12:30',n:'館內午餐'},{id:'e4',t:'14:00',n:'常設展'}],
+         '+1':[{id:'f1',t:'09:00',n:'赤崁樓'},{id:'f2',t:'11:30',n:'高鐵返北'}]}},
+    {id:'5',title:'千與千尋 神隱少女',artist:'宮崎駿 / 吉卜力工作室',cat:'film',status:'confirmed',
+     date:'2025-07-05',time:'14:20',venue:'信義威秀影城',seat:'廳12・H排 14號',note:'重映版，4K修復',days:'0',added:Date.now()-2e6,
+     tl:{'0':[{id:'g1',t:'13:30',n:'抵達威秀取票'},{id:'g2',t:'14:20',n:'電影開始'},{id:'g3',t:'16:50',n:'結束，逛信義商圈'}]}},
+    {id:'4',title:'Taylor Swift — Eras Tour',artist:'Taylor Swift',cat:'concert',status:'pending',
+     date:'2026-03-15',time:'19:00',venue:'台北小巨蛋（傳言）',seat:'',note:'等官宣！',days:'0',added:Date.now(),
+     tl:{'0':[]}},
+  ];
+  sv();
+}
+
+function sv(){
+  localStorage.setItem('mv3',JSON.stringify(evs));
+  if(window._fbSave) window._fbSave();
+}
+
+// ── Firebase 同步（等登入完成後執行）──
+window.addEventListener('tripapp:ready', async function(e) {
+  try {
+    var fb = await import('./firebase-config.js');
+    var uid = e.detail.user.uid;
+    var DOC = 'users/' + uid + '/data/arts';
+    window._fbSave = async function() {
+      await fb.fsSet(DOC, { evs: evs });
+    };
+    var snap = await fb.fsGet(DOC);
+    if (snap.exists()) {
+      var d = snap.data();
+      if (d.evs && d.evs.length) {
+        evs = d.evs;
+        render();
+      }
+    }
+  } catch(err) {
+    window._fbSave = null;
+  }
+});
+
+function parseOff(d){
+  if(!d||d==='0')return[0];
+  const r=[];
+  const pre=d.match(/^(-\d+)/);const post=d.match(/\+(\d+)$/);
+  if(pre){const n=parseInt(pre[1]);for(let i=n;i<0;i++)r.push(i);}
+  r.push(0);
+  if(post){const n=parseInt(post[1]);for(let i=1;i<=n;i++)r.push(i);}
+  return r;
+}
+
+function addD(ds,n){const d=new Date(ds+'T00:00:00');d.setDate(d.getDate()+n);return d;}
+function fmtS(d){return`${d.getMonth()+1}/${d.getDate()} 週${WD[d.getDay()]}`;}
+function dayLbl(o){if(o===0)return'活動當天';if(o===-1)return'前一天';if(o===1)return'後一天';if(o<0)return`前${Math.abs(o)}天`;return`後${o}天`;}
+function dpc(o){return o<0?'dpc-bef':o>0?'dpc-aft':'dpc-main';}
+function dcls(o){return o<0?'bef':o>0?'aft':'';}
+function tpcls(o){return o<0?'bef':o>0?'aft':'main';}
+
+function getList(){
+  let l=filt==='pending'?evs.filter(e=>e.status==='pending')
+        :filt==='all'?[...evs]:evs.filter(e=>e.cat===filt);
+  if(srt==='date')l.sort((a,b)=>a.date.localeCompare(b.date));
+  else if(srt==='added')l.sort((a,b)=>b.added-a.added);
+  else l.sort((a,b)=>a.cat.localeCompare(b.cat)||a.date.localeCompare(b.date));
+  return l;
+}
+
+function render(){
+  const el=document.getElementById('list');
+  const list=getList();
+  if(!list.length){el.innerHTML=`<div class="empty"><div class="eico">🎭</div>尚無活動記錄<br>點右上角 + 新增</div>`;return;}
+  el.innerHTML=list.map(ev=>{
+    const isPend=ev.status==='pending';
+    const catCls=isPend?'cat-pending':`cat-${ev.cat}`;
+    const offs=parseOff(ev.days||'0');
+    const nd=offs.length;
+    let dblk='';
+    if(isPend){
+      dblk=`<div class="pend-col">
+        <svg width="30" height="20" viewBox="0 0 30 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="28" height="18" rx="3.5" stroke="#c47a28" stroke-width="1.2" stroke-dasharray="3.5 2.5" fill="rgba(196,122,40,0.06)"/>
+          <circle cx="8" cy="10" r="2.8" fill="rgba(196,122,40,0.28)"/>
+          <rect x="13" y="7" width="12" height="1.5" rx="0.75" fill="rgba(196,122,40,0.38)"/>
+          <rect x="13" y="10" width="10" height="1.5" rx="0.75" fill="rgba(196,122,40,0.38)"/>
+          <rect x="13" y="13" width="8" height="1.5" rx="0.75" fill="rgba(196,122,40,0.38)"/>
+        </svg>
+        <div class="pend-lbl">待搶票</div>
+      </div>`;
+    } else {
+      const dt=addD(ev.date,0);
+      dblk=`<div class="date-col">
+        <div class="d-mon">${MO[dt.getMonth()]}</div>
+        <div class="d-day">${dt.getDate()}</div>
+        <div class="d-wd">週${WD[dt.getDay()]}</div>
+        ${nd>1?`<div class="d-multi">${nd}天行程</div>`:''}
+      </div>`;
+    }
+    const tlc=Object.values(ev.tl||{}).flat().length;
+    const tstr=isPend?`預計 ${ev.date.slice(5).replace('-','/')}`:ev.time||'—';
+    return`<div class="card ${catCls}${isPend?' pend-card':''}" onclick="openPnl('${ev.id}')">
+      <div class="stripe"></div>
+      <div class="card-inner">
+        <div class="card-top">
+          ${dblk}
+          <div class="card-info">
+            <div class="badges">
+              <span class="cb">${CLBL[ev.cat]}</span>
+              ${isPend?`<span class="pend-b">待搶票</span>`:''}
+              ${nd>1&&!isPend?`<span class="trip-b">${nd}天行程</span>`:''}
+            </div>
+            <div class="card-title">${ev.title}</div>
+            ${ev.artist?`<div class="card-artist">${ev.artist}</div>`:''}
+          </div>
+        </div>
+        <div class="card-foot">
+          <div style="flex:1;min-width:0;">
+            <div class="meta">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
+              ${tstr}${ev.venue?` · ${ev.venue}`:''}
+            </div>
+            ${ev.seat&&!isPend?`<div class="meta" style="margin-top:3px;">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.55"><path d="M2 10h12M4 6l2 4M8 4l2 6M12 6l-2 4"/></svg>
+              ${ev.seat}
+            </div>`:''}
+          </div>
+          <div class="actions">
+            ${tlc?`<span class="tl-cnt">✦ ${tlc}</span>`:''}
+            <button class="ib" onclick="event.stopPropagation();openEdit('${ev.id}')">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2l3 3-8 8H3v-3L11 2z"/></svg>
+            </button>
+          </div>
+        </div>
+        ${ev.note?`<div class="card-note">${ev.note}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openPnl(id){
+  const ev=evs.find(x=>x.id===id);if(!ev)return;
+  pid=id;
+  const isPend=ev.status==='pending';
+  const offs=parseOff(ev.days||'0');
+
+  // badges
+  const bd=document.getElementById('pbdg');
+  const cc=ev.cat==='concert'?'var(--rose)':ev.cat==='theater'?'var(--slate)':ev.cat==='film'?'var(--film)':'var(--teal)';
+  const cb=ev.cat==='concert'?'var(--rose-bg)':ev.cat==='theater'?'var(--slate-bg)':ev.cat==='film'?'var(--film-bg)':'var(--teal-bg)';
+  bd.innerHTML=`<span style="font-size:10px;padding:2px 8px;border-radius:3px;background:${cb};color:${cc}">${CLBL[ev.cat]}</span>`
+    +(isPend?`<span style="font-size:10px;padding:2px 8px;border-radius:3px;background:var(--amber-bg);color:var(--amber);">🎟 待搶票</span>`:'');
+  document.getElementById('pt').textContent=ev.title;
+  document.getElementById('ps').textContent=ev.artist||'';
+
+  // date strip
+  const ds=document.getElementById('pds');
+  if(isPend){
+    ds.innerHTML=`<div style="padding:2px 0">
+      <div style="font-size:12.5px;color:var(--amber);font-weight:500;margin-bottom:3px;">🎟 尚未購票 — 持續關注搶票中</div>
+      <div style="font-size:12px;color:var(--ink2);">預計：${ev.date.slice(0,7).replace('-','/')} ${ev.time?'開演 '+ev.time:''}</div>
+      ${ev.venue?`<div style="font-size:11.5px;color:var(--ink3);margin-top:2px;">${ev.venue}</div>`:''}
+      ${ev.seat?`<div style="font-size:11.5px;color:var(--ink2);margin-top:2px;">🎫 ${ev.seat}</div>`:''}
+    </div>`;
+  } else {
+    const dt=new Date(ev.date+'T00:00:00');
+    const pills=offs.map(o=>{
+      const d=addD(ev.date,o);
+      return`<span class="tpill ${tpcls(o)}">${dayLbl(o)} <span style="opacity:0.65;">${fmtS(d)}</span></span>`;
+    }).join('');
+    ds.innerHTML=`<div class="pd-row">
+      <div class="pd-big">${dt.getDate()}</div>
+      <div class="pd-info">
+        <div class="pd-full">${dt.getFullYear()}年${dt.getMonth()+1}月${dt.getDate()}日 週${WD[dt.getDay()]}</div>
+        ${ev.time?`<div class="pd-time">開演 ${ev.time}</div>`:''}
+        ${ev.venue?`<div class="pd-venue">${ev.venue}</div>`:''}
+        ${ev.seat?`<div class="pd-venue" style="color:var(--ink2);">🎫 ${ev.seat}</div>`:''}
+      </div>
+    </div>
+    ${offs.length>1?`<div class="trip-pills">${pills}</div>`:''}`;
+  }
+
+  renderPB(ev);
+  document.getElementById('pov').classList.add('open');
+  document.getElementById('panel').classList.add('open');
+}
+
+function renderPB(ev){
+  const body=document.getElementById('pb');
+  const offs=parseOff(ev.days||'0');
+  const tl=ev.tl||{};
+  const dayOpts=offs.length>1?`<select class="fi di" id="nday">${offs.map(o=>`<option value="${o}">${dayLbl(o)}</option>`).join('')}</select>`:'';
+
+  const secs=offs.map(o=>{
+    const key=String(o);
+    const steps=tl[key]||[];
+    const d=addD(ev.date,o);
+    const dc=dcls(o);
+    return`<div class="tl-sec">
+      ${offs.length>1?`<div class="tl-dhd">
+        <span class="tl-dpill ${dpc(o)}">${dayLbl(o)}</span>
+        <span class="tl-dlbl">${fmtS(d)}</span>
+        <span class="tl-dline"></span>
+      </div>`:''}
+      <div class="tl">
+        ${steps.length?steps.map(s=>`<div class="tli">
+          <div class="tld ${dc}"></div>
+          <div class="tlin">
+            <div class="tlt ${dc}">${s.t||''}</div>
+            <div class="tlc">
+              <div class="tlnm">${s.n}</div>
+              ${s.o?`<div class="tlnt">${s.o}</div>`:''}
+            </div>
+            <button class="tlx" onclick="delStp('${s.id}',${o})">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+            </button>
+          </div>
+        </div>`).join(''):`<div class="tl-emp">尚無行程</div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML=`
+    ${(ev.platform||ev.pickup||ev.seat)?`<div style="background:var(--bg2);border:0.5px solid var(--border);border-radius:10px;padding:10px 13px;margin-bottom:14px;display:flex;flex-direction:column;gap:6px;">
+      ${ev.seat?`<div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--ink3)" stroke-width="1.5"><path d="M2 10h12M4 6l2 4M8 4l2 6M12 6l-2 4"/></svg>
+        <span style="color:var(--ink3);min-width:52px;font-size:10.5px;">票種／座位</span>
+        <span style="color:var(--ink)">${ev.seat}</span>
+      </div>`:''}
+      ${ev.platform?`<div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--ink3)" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M2 6h12"/><path d="M6 3v3M10 3v3"/></svg>
+        <span style="color:var(--ink3);min-width:52px;font-size:10.5px;">購票平台</span>
+        <span style="color:var(--ink)">${ev.platform}</span>
+      </div>`:''}
+      ${ev.pickup?`<div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--ink3)" stroke-width="1.5"><path d="M3 3h10l1 4H2L3 3z"/><rect x="3" y="7" width="10" height="6" rx="1"/><path d="M6 10h4"/></svg>
+        <span style="color:var(--ink3);min-width:52px;font-size:10.5px;">取票超商</span>
+        <span style="color:var(--ink)">${ev.pickup}</span>
+      </div>`:''}
+    </div>`:''}
+    <div class="abar">
+      <span class="slbl">行程時間軸</span>
+      <button class="btn-as" onclick="togForm()">＋ 新增行程</button>
+    </div>
+    <div class="aform" id="af">
+      <div class="fr">
+        <input class="fi ti" id="nt" type="time">
+        ${dayOpts}
+        <input class="fi" id="nn" placeholder="行程名稱">
+      </div>
+      <input class="fi" id="no" placeholder="備注（選填）" style="width:100%;margin-bottom:7px;">
+      <div class="fb">
+        <button class="fno" onclick="togForm()">取消</button>
+        <button class="fok" onclick="addStp()">加入</button>
+      </div>
+    </div>
+    ${secs}
+    <div class="notesec">
+      <div class="seclbl">備忘錄</div>
+      <textarea class="nta" placeholder="票券資訊、交通、想帶的東西…" oninput="svNote(this.value)">${ev.note||''}</textarea>
+    </div>`;
+}
+
+function togForm(){
+  const f=document.getElementById('af');f.classList.toggle('open');
+  if(f.classList.contains('open'))setTimeout(()=>document.getElementById('nn').focus(),40);
+}
+
+function addStp(){
+  const t=document.getElementById('nt').value;
+  const n=document.getElementById('nn').value.trim();
+  const o=document.getElementById('no').value.trim();
+  if(!n)return;
+  const ev=evs.find(x=>x.id===pid);if(!ev)return;
+  const de=document.getElementById('nday');
+  const k=de?String(de.value):'0';
+  if(!ev.tl)ev.tl={};
+  if(!ev.tl[k])ev.tl[k]=[];
+  ev.tl[k].push({id:'s'+Date.now(),t,n,o});
+  ev.tl[k].sort((a,b)=>(a.t||'').localeCompare(b.t||''));
+  sv();renderPB(ev);render();
+  document.getElementById('nt').value='';
+  document.getElementById('nn').value='';
+  document.getElementById('no').value='';
+  document.getElementById('af').classList.add('open');
+}
+
+function delStp(sid,off){
+  const ev=evs.find(x=>x.id===pid);if(!ev)return;
+  const k=String(off);
+  if(ev.tl[k])ev.tl[k]=ev.tl[k].filter(s=>s.id!==sid);
+  sv();renderPB(ev);render();
+}
+
+function svNote(v){const ev=evs.find(x=>x.id===pid);if(!ev)return;ev.note=v;sv();render();}
+function closePnl(){document.getElementById('pov').classList.remove('open');document.getElementById('panel').classList.remove('open');pid=null;}
+
+// MODAL
+function openAdd(){
+  eid=null;mcat='concert';mst='confirmed';mdays='0';
+  ['fT','fA','fV','fSeat','fPlatform','fPickup','fN'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('fD').value='';
+  document.getElementById('fTm').value='19:30';
+  syncC();syncS();syncD();
+  document.getElementById('dhint').innerHTML='';
+  document.getElementById('pnote').classList.remove('show');
+  document.getElementById('mttl').textContent='新增活動';
+  document.getElementById('mDelBtn').style.display='none';
+  document.getElementById('mov').classList.add('open');
+  document.getElementById('modal').classList.add('open');
+  setTimeout(()=>document.getElementById('fT').focus(),350);
+}
+
+function openEdit(id){
+  const ev=evs.find(x=>x.id===id);if(!ev)return;
+  eid=id;mcat=ev.cat;mst=ev.status||'confirmed';mdays=ev.days||'0';
+  document.getElementById('fT').value=ev.title;
+  document.getElementById('fA').value=ev.artist||'';
+  document.getElementById('fD').value=ev.date;
+  document.getElementById('fTm').value=ev.time||'';
+  document.getElementById('fV').value=ev.venue||'';
+  document.getElementById('fSeat').value=ev.seat||'';
+  document.getElementById('fPlatform').value=ev.platform||'';
+  document.getElementById('fPickup').value=ev.pickup||'';
+  document.getElementById('fN').value=ev.note||'';
+  syncC();syncS();syncD();updHint();
+  document.getElementById('pnote').classList.toggle('show',mst==='pending');
+  document.getElementById('mttl').textContent='編輯活動';
+  document.getElementById('mDelBtn').style.display='flex';
+  document.getElementById('mov').classList.add('open');
+  document.getElementById('modal').classList.add('open');
+}
+
+function sCat(c){mcat=c;syncC();}
+function sSt(s){mst=s;syncS();document.getElementById('pnote').classList.toggle('show',s==='pending');}
+function sDays(el){mdays=el.dataset.d;syncD();updHint();}
+function syncC(){document.querySelectorAll('.copt').forEach(o=>o.classList.toggle('sel',o.dataset.v===mcat));}
+function syncS(){document.querySelectorAll('.sopt').forEach(o=>o.classList.toggle('sel',o.dataset.s===mst));}
+function syncD(){document.querySelectorAll('.dopt').forEach(o=>o.classList.toggle('sel',o.dataset.d===mdays));}
+
+function updHint(){
+  const fd=document.getElementById('fD').value;
+  const h=document.getElementById('dhint');
+  if(!fd||mdays==='0'){h.innerHTML='';return;}
+  const offs=parseOff(mdays);
+  if(offs.length<=1){h.innerHTML='';return;}
+  h.innerHTML=offs.map(o=>{
+    const d=addD(fd,o);
+    return`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;"><span class="tl-dpill ${dpc(o)}" style="font-size:9.5px;padding:1px 7px;">${dayLbl(o)}</span>${fmtS(d)}</span>`;
+  }).join('');
+}
+document.getElementById('fD').addEventListener('change',updHint);
+
+function saveEv(){
+  const title=document.getElementById('fT').value.trim();
+  const date=document.getElementById('fD').value;
+  if(!title){document.getElementById('fT').style.borderColor='var(--rose)';return;}
+  if(!date){document.getElementById('fD').style.borderColor='var(--rose)';return;}
+  const offs=parseOff(mdays);
+  if(eid){
+    const ev=evs.find(x=>x.id===eid);
+    ev.title=title;ev.artist=document.getElementById('fA').value.trim();
+    ev.cat=mcat;ev.status=mst;ev.date=date;ev.time=document.getElementById('fTm').value;
+    ev.venue=document.getElementById('fV').value.trim();ev.seat=document.getElementById('fSeat').value.trim();ev.platform=document.getElementById('fPlatform').value.trim();ev.pickup=document.getElementById('fPickup').value.trim();ev.note=document.getElementById('fN').value.trim();
+    ev.days=mdays;
+    if(!ev.tl)ev.tl={};
+    offs.forEach(o=>{if(!ev.tl[String(o)])ev.tl[String(o)]=[];});
+  } else {
+    const tl={};offs.forEach(o=>{tl[String(o)]=[];});
+    evs.push({id:'e'+Date.now(),title,artist:document.getElementById('fA').value.trim(),
+      cat:mcat,status:mst,date,time:document.getElementById('fTm').value,
+      venue:document.getElementById('fV').value.trim(),seat:document.getElementById('fSeat').value.trim(),platform:document.getElementById('fPlatform').value.trim(),pickup:document.getElementById('fPickup').value.trim(),note:document.getElementById('fN').value.trim(),
+      days:mdays,added:Date.now(),tl});
+  }
+  sv();render();closeMdl();
+}
+
+function closeMdl(){document.getElementById('mov').classList.remove('open');document.getElementById('modal').classList.remove('open');}
+
+function delFromEdit(){
+  if(!eid)return;
+  closeMdl();
+  doDel(eid);
+}
+
+function doDel(id){
+  const ev=evs.find(x=>x.id===id);if(!ev)return;
+  document.getElementById('tmsg').textContent=`刪除「${ev.title}」？`;
+  const t=document.getElementById('toast');t.classList.add('show');
+  document.getElementById('tdel').onclick=()=>{evs=evs.filter(x=>x.id!==id);sv();render();t.classList.remove('show');};
+  clearTimeout(ttm);ttm=setTimeout(()=>t.classList.remove('show'),5000);
+}
+
+function setFilt(f,el){filt=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');render();}
+function setSrt(s,el){srt=s;document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');render();}
+
+document.getElementById('modal').addEventListener('click',e=>e.stopPropagation());
+document.getElementById('panel').addEventListener('click',e=>e.stopPropagation());
+render();
+</script>
+</body>
+</html>
