@@ -125,7 +125,7 @@ document.head.appendChild(style);
 const APPS = [
   { label: '🌸 首頁', href: 'index.html' },
   { label: '💰 記帳', href: '購物紀錄.html' },
-  { label: '🛍 購物', href: 'wishlist.html' },
+  { label: '⭐ 願望', href: 'wishlist.html' },
   { label: '🎨 藝文', href: 'arts-tracker.html' },
   { label: '📋 計畫', href: 'routine_tracker.html' },
 ];
