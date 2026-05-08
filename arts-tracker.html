@@ -223,7 +223,9 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .eico{font-size:34px;margin-bottom:10px;opacity:0.4;}
 
 /* ── 封面圖 ── */
-.card-cover{width:100%;height:110px;object-fit:cover;display:block;border-bottom:0.5px solid var(--border);}
+.card-with-cover { display: flex; align-items: stretch; }
+.card-cover-left { width: 88px; flex-shrink: 0; object-fit: cover; display: block; border-right: 0.5px solid var(--border); border-radius: 0; }
+.card-with-cover .card-inner { flex: 1; min-width: 0; }
 .cover-upload{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1.5px dashed var(--border2);border-radius:9px;padding:10px 13px;cursor:pointer;transition:border-color 0.15s;}
 .cover-upload:hover{border-color:var(--rose);}
 .cover-upload-icon{font-size:20px;flex-shrink:0;}
@@ -232,7 +234,7 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 .cover-preview-wrap{position:relative;border-radius:9px;overflow:hidden;margin-bottom:4px;}
 .cover-preview-img{width:100%;height:140px;object-fit:cover;display:block;}
 .cover-preview-del{position:absolute;top:7px;right:7px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;line-height:1;}
-.panel-cover{width:100%;max-height:200px;object-fit:cover;display:block;}
+.panel-cover{width:100%;max-height:220px;object-fit:cover;display:block;}
 .cover-compress-hint{font-size:10px;color:var(--ink4);margin-top:4px;text-align:center;}
 </style>
 </head>
@@ -375,52 +377,74 @@ const WD=['日','一','二','三','四','五','六'];
 const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CLBL={concert:'演唱會',theater:'舞台劇',arts:'藝文活動',film:'電影'};
 
-let evs=JSON.parse(localStorage.getItem('mv3')||'[]');
+let evs = [];
 let filt='all',srt='date',pid=null,eid=null;
 let mcat='concert',mst='confirmed',mdays='0',ttm=null;
-let mCoverB64=null; // 目前編輯中的封面 base64
+let mCoverFile = null;
+let mCoverPreviewURL = null;
+let _fbReady = false;
 
-if(!evs.length){
-  evs=[
-    {id:'1',title:'草東沒有派對 — 山海牛奶糖巡演',artist:'草東沒有派對',cat:'concert',status:'confirmed',
-     date:'2025-09-14',time:'18:30',venue:'台中洲際棒球場',seat:'搖滾區 GA',note:'記得帶耳塞',days:'-1',added:Date.now()-5e6,
-     tl:{'-1':[{id:'a1',t:'10:00',n:'搭高鐵前往台中'},{id:'a2',t:'13:00',n:'逢甲午餐'},{id:'a3',t:'15:00',n:'Check-in 飯店'}],
-         '0':[{id:'b1',t:'16:00',n:'前往洲際棒球場'},{id:'b2',t:'18:30',n:'演唱會開始'},{id:'b3',t:'22:00',n:'散場宵夜'}]}},
-    {id:'2',title:'歌劇魅影 40週年紀念版',artist:'The Phantom of the Opera',cat:'theater',status:'confirmed',
-     date:'2025-08-03',time:'14:00',venue:'國家戲劇院',seat:'二樓正中央 C排',note:'',days:'0',added:Date.now()-3e6,
-     tl:{'0':[{id:'c1',t:'12:30',n:'捷運中正紀念堂'},{id:'c2',t:'13:00',n:'購節目單'},{id:'c3',t:'14:00',n:'第一幕'},{id:'c4',t:'15:20',n:'中場休息',o:'約20分鐘'},{id:'c5',t:'16:40',n:'演出結束'}]}},
-    {id:'3',title:'奇美博物館 — 印象派特展',artist:'奇美博物館',cat:'arts',status:'confirmed',
-     date:'2025-06-21',time:'10:00',venue:'台南奇美博物館',seat:'',note:'預約早場，帶相機',days:'-1+1',added:Date.now()-1e6,
-     tl:{'-1':[{id:'d1',t:'14:00',n:'高鐵到台南'},{id:'d2',t:'16:00',n:'安平老街散步'}],
-         '0':[{id:'e1',t:'09:30',n:'前往奇美'},{id:'e2',t:'10:00',n:'特展入場'},{id:'e3',t:'12:30',n:'館內午餐'},{id:'e4',t:'14:00',n:'常設展'}],
-         '+1':[{id:'f1',t:'09:00',n:'赤崁樓'},{id:'f2',t:'11:30',n:'高鐵返北'}]}},
-    {id:'5',title:'千與千尋 神隱少女',artist:'宮崎駿 / 吉卜力工作室',cat:'film',status:'confirmed',
-     date:'2025-07-05',time:'14:20',venue:'信義威秀影城',seat:'廳12・H排 14號',note:'重映版，4K修復',days:'0',added:Date.now()-2e6,
-     tl:{'0':[{id:'g1',t:'13:30',n:'抵達威秀取票'},{id:'g2',t:'14:20',n:'電影開始'},{id:'g3',t:'16:50',n:'結束，逛信義商圈'}]}},
-    {id:'4',title:'Taylor Swift — Eras Tour',artist:'Taylor Swift',cat:'concert',status:'pending',
-     date:'2026-03-15',time:'19:00',venue:'台北小巨蛋（傳言）',seat:'',note:'等官宣！',days:'0',added:Date.now(),
-     tl:{'0':[]}},
-  ];
-  sv();
-}
+// 範例資料（只在 Firebase 完全沒有任何資料時才插入一次）
+const SAMPLE_EVS = [
+  {id:'1',title:'草東沒有派對 — 山海牛奶糖巡演',artist:'草東沒有派對',cat:'concert',status:'confirmed',
+   date:'2025-09-14',time:'18:30',venue:'台中洲際棒球場',seat:'搖滾區 GA',note:'記得帶耳塞',days:'-1',added:Date.now()-5e6,
+   tl:{'-1':[{id:'a1',t:'10:00',n:'搭高鐵前往台中'},{id:'a2',t:'13:00',n:'逢甲午餐'},{id:'a3',t:'15:00',n:'Check-in 飯店'}],
+       '0':[{id:'b1',t:'16:00',n:'前往洲際棒球場'},{id:'b2',t:'18:30',n:'演唱會開始'},{id:'b3',t:'22:00',n:'散場宵夜'}]}},
+  {id:'2',title:'歌劇魅影 40週年紀念版',artist:'The Phantom of the Opera',cat:'theater',status:'confirmed',
+   date:'2025-08-03',time:'14:00',venue:'國家戲劇院',seat:'二樓正中央 C排',note:'',days:'0',added:Date.now()-3e6,
+   tl:{'0':[{id:'c1',t:'12:30',n:'捷運中正紀念堂'},{id:'c2',t:'13:00',n:'購節目單'},{id:'c3',t:'14:00',n:'第一幕'},{id:'c4',t:'15:20',n:'中場休息',o:'約20分鐘'},{id:'c5',t:'16:40',n:'演出結束'}]}},
+  {id:'3',title:'奇美博物館 — 印象派特展',artist:'奇美博物館',cat:'arts',status:'confirmed',
+   date:'2025-06-21',time:'10:00',venue:'台南奇美博物館',seat:'',note:'預約早場，帶相機',days:'-1+1',added:Date.now()-1e6,
+   tl:{'-1':[{id:'d1',t:'14:00',n:'高鐵到台南'},{id:'d2',t:'16:00',n:'安平老街散步'}],
+       '0':[{id:'e1',t:'09:30',n:'前往奇美'},{id:'e2',t:'10:00',n:'特展入場'},{id:'e3',t:'12:30',n:'館內午餐'},{id:'e4',t:'14:00',n:'常設展'}],
+       '+1':[{id:'f1',t:'09:00',n:'赤崁樓'},{id:'f2',t:'11:30',n:'高鐵返北'}]}},
+  {id:'5',title:'千與千尋 神隱少女',artist:'宮崎駿 / 吉卜力工作室',cat:'film',status:'confirmed',
+   date:'2025-07-05',time:'14:20',venue:'信義威秀影城',seat:'廳12・H排 14號',note:'重映版，4K修復',days:'0',added:Date.now()-2e6,
+   tl:{'0':[{id:'g1',t:'13:30',n:'抵達威秀取票'},{id:'g2',t:'14:20',n:'電影開始'},{id:'g3',t:'16:50',n:'結束，逛信義商圈'}]}},
+  {id:'4',title:'Taylor Swift — Eras Tour',artist:'Taylor Swift',cat:'concert',status:'pending',
+   date:'2026-03-15',time:'19:00',venue:'台北小巨蛋（傳言）',seat:'',note:'等官宣！',days:'0',added:Date.now(),
+   tl:{'0':[]}},
+];
 
 function sv(){
-  localStorage.setItem('mv3',JSON.stringify(evs));
-  if(window._fbSave) window._fbSave();
+  localStorage.setItem('mv3', JSON.stringify(evs));
+  if (_fbReady && window._fbSave) window._fbSave();
 }
 
 // ── Firebase 同步（等登入完成後執行）──
 window.addEventListener('tripapp:ready', function(e) {
   var uid = e.detail.user.uid;
   var DOC = 'users/' + uid + '/data/arts';
+
   window._fbSave = function() {
     window._fb.fsSet(DOC, { evs: evs });
   };
+
+  // Firebase 是唯一可信來源，載入後以 Firebase 資料為準
   window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
       var d = snap.data();
-      if (d.evs && d.evs.length) { evs = d.evs; render(); }
+      if (Array.isArray(d.evs)) {
+        // Firebase 有資料 → 直接用，完全忽略 localStorage 和範例
+        evs = d.evs;
+      } else {
+        // Firebase 有文件但 evs 是空陣列 → 視為空資料
+        evs = [];
+      }
+    } else {
+      // Firebase 完全沒有這筆資料 → 第一次使用，插入範例並上傳
+      evs = SAMPLE_EVS;
+      window._fbSave();
     }
+    _fbReady = true;
+    localStorage.setItem('mv3', JSON.stringify(evs));
+    render();
+  }).catch(function(err) {
+    // Firebase 讀取失敗（網路問題等）→ fallback 到 localStorage
+    console.warn('Firebase 讀取失敗，使用本地資料', err);
+    evs = JSON.parse(localStorage.getItem('mv3') || '[]');
+    _fbReady = true;
+    render();
   });
 });
 
@@ -452,6 +476,10 @@ function getList(){
 
 function render(){
   const el=document.getElementById('list');
+  if(!_fbReady){
+    el.innerHTML='<div class="empty"><div class="eico">⏳</div>載入中…</div>';
+    return;
+  }
   const list=getList();
   if(!list.length){el.innerHTML=`<div class="empty"><div class="eico">🎭</div>尚無活動記錄<br>點右上角 + 新增</div>`;return;}
   el.innerHTML=list.map(ev=>{
@@ -484,39 +512,41 @@ function render(){
     const tstr=isPend?`預計 ${ev.date.slice(5).replace('-','/')}`:ev.time||'—';
     return`<div class="card ${catCls}${isPend?' pend-card':''}" onclick="openPnl('${ev.id}')">
       <div class="stripe"></div>
-      ${ev.coverURL?`<img class="card-cover" src="${ev.coverURL}" alt="封面" loading="lazy">`:''}
-      <div class="card-inner">
-        <div class="card-top">
-          ${dblk}
-          <div class="card-info">
-            <div class="badges">
-              <span class="cb">${CLBL[ev.cat]}</span>
-              ${isPend?`<span class="pend-b">待搶票</span>`:''}
-              ${nd>1&&!isPend?`<span class="trip-b">${nd}天行程</span>`:''}
+      <div class="${ev.coverURL?'card-with-cover':''}">
+        ${ev.coverURL?`<img class="card-cover-left" src="${ev.coverURL}" alt="封面" loading="lazy">`:''}
+        <div class="card-inner">
+          <div class="card-top">
+            ${dblk}
+            <div class="card-info">
+              <div class="badges">
+                <span class="cb">${CLBL[ev.cat]}</span>
+                ${isPend?`<span class="pend-b">待搶票</span>`:''}
+                ${nd>1&&!isPend?`<span class="trip-b">${nd}天行程</span>`:''}
+              </div>
+              <div class="card-title">${ev.title}</div>
+              ${ev.artist?`<div class="card-artist">${ev.artist}</div>`:''}
             </div>
-            <div class="card-title">${ev.title}</div>
-            ${ev.artist?`<div class="card-artist">${ev.artist}</div>`:''}
           </div>
-        </div>
-        <div class="card-foot">
-          <div style="flex:1;min-width:0;">
-            <div class="meta">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
-              ${tstr}${ev.venue?` · ${ev.venue}`:''}
+          <div class="card-foot">
+            <div style="flex:1;min-width:0;">
+              <div class="meta">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 1.5"/></svg>
+                ${tstr}${ev.venue?` · ${ev.venue}`:''}
+              </div>
+              ${ev.seat&&!isPend?`<div class="meta" style="margin-top:3px;">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.55"><path d="M2 10h12M4 6l2 4M8 4l2 6M12 6l-2 4"/></svg>
+                ${ev.seat}
+              </div>`:''}
             </div>
-            ${ev.seat&&!isPend?`<div class="meta" style="margin-top:3px;">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:0.55"><path d="M2 10h12M4 6l2 4M8 4l2 6M12 6l-2 4"/></svg>
-              ${ev.seat}
-            </div>`:''}
+            <div class="actions">
+              ${tlc?`<span class="tl-cnt">✦ ${tlc}</span>`:''}
+              <button class="ib" onclick="event.stopPropagation();openEdit('${ev.id}')">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2l3 3-8 8H3v-3L11 2z"/></svg>
+              </button>
+            </div>
           </div>
-          <div class="actions">
-            ${tlc?`<span class="tl-cnt">✦ ${tlc}</span>`:''}
-            <button class="ib" onclick="event.stopPropagation();openEdit('${ev.id}')">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2l3 3-8 8H3v-3L11 2z"/></svg>
-            </button>
-          </div>
+          ${ev.note?`<div class="card-note">${ev.note}</div>`:''}
         </div>
-        ${ev.note?`<div class="card-note">${ev.note}</div>`:''}
       </div>
     </div>`;
   }).join('');

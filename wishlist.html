@@ -834,8 +834,8 @@ const W = (() => {
   let currentView='all', currentCat='全部', editingId=null, archiveOpen=false, uploadedImgData=null;
   let editingCats=[], dragSrcIdx=null, emojiTarget=null, pendingNewEmoji='📦';
 
-  function saveItems() { localStorage.setItem('wishlist_items',JSON.stringify(items)); if(window._fbSave) window._fbSave(); }
-  function saveCatsStore() { localStorage.setItem('wishlist_cats',JSON.stringify(categories)); if(window._fbSave) window._fbSave(); }
+  function saveItems() { localStorage.setItem('wishlist_items',JSON.stringify(items)); if(_fbReady && window._fbSave) window._fbSave(); }
+  function saveCatsStore() { localStorage.setItem('wishlist_cats',JSON.stringify(categories)); if(_fbReady && window._fbSave) window._fbSave(); }
   function toTWD(price,cur) { return Number(price||0)*(RATES[cur||'TWD'].twdPer); }
   function fromTWD(twd,cur) { return twd/(RATES[cur||'TWD'].twdPer); }
   function fmtPrice(price,origCur,showCur) {
@@ -974,7 +974,7 @@ const W = (() => {
   }
 
   // ── Actions ──
-  function setCurrency(c) { displayCurrency=c; localStorage.setItem('wishlist_cur',c); render(); if(window._fbSave) window._fbSave(); }
+  function setCurrency(c) { displayCurrency=c; localStorage.setItem('wishlist_cur',c); render(); if(_fbReady && window._fbSave) window._fbSave(); }
   function toggleBought(id) { const i=items.find(x=>x.id===id); if(i){i.bought=!i.bought;saveItems();render();} }
   function toggleFav(id) { const i=items.find(x=>x.id===id); if(i){i.fav=!i.fav;saveItems();render();} }
   function deleteItem(id) { if(!confirm('確定刪除？'))return; items=items.filter(x=>x.id!==id);saveItems();render(); }
@@ -1188,8 +1188,8 @@ const P = (() => {
   let currentView='all', currentCat='全部', editingId=null, archiveOpen=false, uploadedImgData=null, pendingRating=0;
   let editingCats=[], dragSrcIdx=null, emojiTarget=null, pendingNewEmoji='📍';
 
-  function savePlaces() { localStorage.setItem('placelist_items',JSON.stringify(places)); if(window._fbSavePlaces) window._fbSavePlaces(); }
-  function saveCatsStore() { localStorage.setItem('placelist_cats',JSON.stringify(categories)); if(window._fbSavePlaces) window._fbSavePlaces(); }
+  function savePlaces() { localStorage.setItem('placelist_items',JSON.stringify(places)); if(_fbReady && window._fbSavePlaces) window._fbSavePlaces(); }
+  function saveCatsStore() { localStorage.setItem('placelist_cats',JSON.stringify(categories)); if(_fbReady && window._fbSavePlaces) window._fbSavePlaces(); }
 
   function render() { renderCats(); renderStats(); renderItems(); }
   function renderCats() {
@@ -1487,10 +1487,12 @@ W.init();
 P.render(); // render but don't show (page 1 is hidden)
 
 // ── Firebase 同步（等登入完成後執行）──
+var _fbReady = false;
 window.addEventListener('tripapp:ready', function(e) {
   var uid = e.detail.user.uid;
   var W_DOC = 'users/' + uid + '/data/wishlist';
   var P_DOC = 'users/' + uid + '/data/placelist';
+
   window._fbSave = function() {
     var wItems = JSON.parse(localStorage.getItem('wishlist_items')||'[]');
     var wCats  = JSON.parse(localStorage.getItem('wishlist_cats')||'[]');
@@ -1502,22 +1504,41 @@ window.addEventListener('tripapp:ready', function(e) {
     var pCats  = JSON.parse(localStorage.getItem('placelist_cats')||'[]');
     window._fb.fsSet(P_DOC, { items: pItems, cats: pCats });
   };
-  window._fb.fsGet(W_DOC).then(function(wSnap) {
+
+  // 兩個都讀完才標記 ready
+  Promise.all([
+    window._fb.fsGet(W_DOC),
+    window._fb.fsGet(P_DOC)
+  ]).then(function(results) {
+    var wSnap = results[0], pSnap = results[1];
+
+    // Wishlist
     if (wSnap.exists()) {
       var wd = wSnap.data();
-      if (wd.items && wd.items.length) localStorage.setItem('wishlist_items', JSON.stringify(wd.items));
-      if (wd.cats  && wd.cats.length)  localStorage.setItem('wishlist_cats',  JSON.stringify(wd.cats));
+      if (Array.isArray(wd.items)) localStorage.setItem('wishlist_items', JSON.stringify(wd.items));
+      if (Array.isArray(wd.cats) && wd.cats.length) localStorage.setItem('wishlist_cats', JSON.stringify(wd.cats));
       if (wd.currency) localStorage.setItem('wishlist_cur', wd.currency);
-      if (window.W && window.W.reload) window.W.reload();
-    } else { if (window._fbSave) window._fbSave(); }
-  });
-  window._fb.fsGet(P_DOC).then(function(pSnap) {
+    } else {
+      // 第一次：把本地資料上傳
+      window._fbSave();
+    }
+
+    // Placelist
     if (pSnap.exists()) {
       var pd = pSnap.data();
-      if (pd.items && pd.items.length) localStorage.setItem('placelist_items', JSON.stringify(pd.items));
-      if (pd.cats  && pd.cats.length)  localStorage.setItem('placelist_cats',  JSON.stringify(pd.cats));
-      if (window.P && window.P.reload) window.P.reload();
-    } else { if (window._fbSavePlaces) window._fbSavePlaces(); }
+      if (Array.isArray(pd.items)) localStorage.setItem('placelist_items', JSON.stringify(pd.items));
+      if (Array.isArray(pd.cats) && pd.cats.length) localStorage.setItem('placelist_cats', JSON.stringify(pd.cats));
+    } else {
+      window._fbSavePlaces();
+    }
+
+    _fbReady = true;
+    if (window.W && window.W.reload) window.W.reload();
+    if (window.P && window.P.reload) window.P.reload();
+
+  }).catch(function(err) {
+    console.warn('Firebase 讀取失敗', err);
+    _fbReady = true;
   });
 });
 </script>

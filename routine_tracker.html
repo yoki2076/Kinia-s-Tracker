@@ -778,13 +778,14 @@ function nextMonth(){archiveMonth++;if(archiveMonth>11){archiveMonth=0;archiveYe
 renderAll();
 
 // ── Firebase 同步（等登入完成後執行）──
+var _fbReady = false;
 window.addEventListener('tripapp:ready', function(e) {
   var uid = e.detail.user.uid;
   var DOC = 'users/' + uid + '/data/routine';
   var _origSaveToday = saveToday;
   saveToday = function() {
     _origSaveToday();
-    if (window._fbSave) window._fbSave();
+    if (_fbReady && window._fbSave) window._fbSave();
   };
   window._fbSave = function() {
     window._fb.fsSet(DOC, { S: S });
@@ -792,8 +793,18 @@ window.addEventListener('tripapp:ready', function(e) {
   window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
       var d = snap.data();
-      if (d.S) { S = Object.assign(S, d.S); renderAll(); }
+      if (d.S) {
+        S = Object.assign(S, d.S);
+      }
+    } else {
+      // 第一次用：把目前的 S（含預設範例）上傳
+      window._fb.fsSet(DOC, { S: S });
     }
+    _fbReady = true;
+    renderAll();
+  }).catch(function(err) {
+    console.warn('Firebase 讀取失敗', err);
+    _fbReady = true;
   });
 });
 </script>

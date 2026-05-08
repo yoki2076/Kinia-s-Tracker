@@ -462,8 +462,9 @@ let currentView = "list";
 let editingId = null;
 let deleteTargetId = null;
 let formCategory = "clothing";
-let formItems = []; // [{name, qty, price}]
-let formReceipts = []; // base64 strings
+let formItems = [];
+let formReceipts = [];
+let _fbReady = false;
 
 // ── MONTH NAVIGATION ──────────────────────────────────────
 let viewMonth = new Date();
@@ -1015,7 +1016,7 @@ function saveExpense() {
   updateHeader();
   renderList();
   showView('list');
-  if(window._fbSave) window._fbSave();
+  if(_fbReady && window._fbSave) window._fbSave();
 }
 
 function openDeleteDialog(id) {
@@ -1030,7 +1031,7 @@ function confirmDelete() {
   if (!deleteTargetId) return;
   expenses = expenses.filter(e => e.id !== deleteTargetId);
   closeDeleteDialog();
-  if(window._fbSave) window._fbSave();
+  if(_fbReady && window._fbSave) window._fbSave();
   updateHeader();
   renderList();
   showToast('已刪除', 'info');
@@ -1105,13 +1106,25 @@ window.addEventListener('tripapp:ready', function(e) {
   window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
       var d = snap.data();
-      if (d.expenses && d.expenses.length) {
+      if (Array.isArray(d.expenses)) {
         expenses = d.expenses;
         nextId = d.nextId || nextId;
-        updateHeader();
-        renderList();
+      } else {
+        expenses = [];
       }
+    } else {
+      expenses = [];
     }
+    _fbReady = true;
+    updateHeader();
+    updateMonthNav();
+    renderList();
+  }).catch(function(err) {
+    console.warn('Firebase 讀取失敗', err);
+    _fbReady = true;
+    updateHeader();
+    updateMonthNav();
+    renderList();
   });
 });
 </script>
