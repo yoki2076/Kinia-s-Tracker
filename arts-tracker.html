@@ -417,23 +417,24 @@ window.addEventListener('tripapp:ready', function(e) {
   var uid = e.detail.user.uid;
   var DOC = 'users/' + uid + '/data/arts';
 
+  // 用 JSON 字串存，避免 Firestore 不支援巢狀陣列/特殊 key 的問題
   window._fbSave = function() {
-    window._fb.fsSet(DOC, { evs: evs });
+    window._fb.fsSet(DOC, { evs_json: JSON.stringify(evs) });
   };
 
-  // Firebase 是唯一可信來源，載入後以 Firebase 資料為準
   window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
       var d = snap.data();
-      if (Array.isArray(d.evs)) {
-        // Firebase 有資料 → 直接用，完全忽略 localStorage 和範例
+      // 優先讀新格式 evs_json，fallback 舊格式 evs
+      if (d.evs_json) {
+        try { evs = JSON.parse(d.evs_json); } catch(e2) { evs = []; }
+      } else if (Array.isArray(d.evs) && d.evs.length > 0) {
         evs = d.evs;
+        window._fbSave(); // 舊資料一次性轉換成新格式
       } else {
-        // Firebase 有文件但 evs 是空陣列 → 視為空資料
         evs = [];
       }
     } else {
-      // Firebase 完全沒有這筆資料 → 第一次使用，插入範例並上傳
       evs = SAMPLE_EVS;
       window._fbSave();
     }
@@ -441,7 +442,6 @@ window.addEventListener('tripapp:ready', function(e) {
     localStorage.setItem('mv3', JSON.stringify(evs));
     render();
   }).catch(function(err) {
-    // Firebase 讀取失敗（網路問題等）→ fallback 到 localStorage
     console.warn('Firebase 讀取失敗，使用本地資料', err);
     evs = JSON.parse(localStorage.getItem('mv3') || '[]');
     _fbReady = true;
@@ -734,10 +734,8 @@ function closePnl(){
 // MODAL
 function openAdd(){
   eid=null;mcat='concert';mst='confirmed';mdays='0';
-  ['fT','fA','fV','fSeat','fPlatform','fPickup','fN'].forEach(i=>{
-    var el=document.getElementById(i);el.value='';el.style.borderColor='';
-  });
-  var fD=document.getElementById('fD');fD.value='';fD.style.borderColor='';
+  ['fT','fA','fV','fSeat','fPlatform','fPickup','fN'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('fD').value='';
   document.getElementById('fTm').value='19:30';
   syncC();syncS();syncD();
   document.getElementById('dhint').innerHTML='';
@@ -745,7 +743,6 @@ function openAdd(){
   document.getElementById('mttl').textContent='新增活動';
   document.getElementById('mDelBtn').style.display='none';
   resetCoverUI();
-  document.querySelector('.mbdy').scrollTop=0;
   document.getElementById('mov').classList.add('open');
   document.getElementById('modal').classList.add('open');
   setTimeout(()=>document.getElementById('fT').focus(),350);
@@ -763,7 +760,6 @@ function openEdit(id){
   document.getElementById('fPlatform').value=ev.platform||'';
   document.getElementById('fPickup').value=ev.pickup||'';
   document.getElementById('fN').value=ev.note||'';
-  ['fT','fA','fV','fSeat','fPlatform','fPickup','fN','fD'].forEach(i=>{document.getElementById(i).style.borderColor='';});
   syncC();syncS();syncD();updHint();
   document.getElementById('pnote').classList.toggle('show',mst==='pending');
   document.getElementById('mttl').textContent='編輯活動';
@@ -779,7 +775,6 @@ function openEdit(id){
     resetCoverUI();
   }
   document.getElementById('mov').classList.add('open');
-  document.querySelector('.mbdy').scrollTop=0;
   document.getElementById('modal').classList.add('open');
 }
 
