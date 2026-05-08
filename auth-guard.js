@@ -1,12 +1,9 @@
 // ══════════════════════════════════════════════════════
 //  auth-guard.js  —  Kinia's Tracker
-//  自包含版本：直接引入 Firebase CDN，不依賴外部 import
-//  ⚠️  請把下方 firebaseConfig 換成你自己的設定
 // ══════════════════════════════════════════════════════
 
 (function () {
 
-// ── 🔧 填入你的 Firebase 設定 ──────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyBylnTy_pDq8fnF9j0rfz6X8NAz2nOPwtE",
   authDomain: "kinia-s-tracker.firebaseapp.com",
@@ -15,7 +12,6 @@ const firebaseConfig = {
   messagingSenderId: "51395444020",
   appId: "1:51395444020:web:e467a74bdbdb3d5e3eb961"
 };
-// ──────────────────────────────────────────────────────
 
 const APPS = [
   { label: '🌸 首頁',  href: 'index.html' },
