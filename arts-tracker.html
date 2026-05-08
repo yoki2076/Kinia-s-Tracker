@@ -224,7 +224,10 @@ body.auth-ready .header{top:52px;}
 .eico{font-size:34px;margin-bottom:10px;opacity:0.4;}
 
 /* ── 封面圖 ── */
-.card-cover{width:80px;flex-shrink:0;object-fit:cover;display:block;border-right:0.5px solid var(--border);align-self:stretch;border-radius:0;}.card-has-cover{display:flex;align-items:stretch;}.card-has-cover .card-inner{flex:1;min-width:0;}.card-has-cover .stripe{display:none;}
+.card-cover{width:82px;flex-shrink:0;object-fit:cover;display:block;border-right:0.5px solid var(--border);align-self:stretch;}
+.card-has-cover{display:flex;align-items:stretch;}
+.card-has-cover .card-inner{flex:1;min-width:0;}
+.card-has-cover .stripe{display:none;}
 .cover-upload{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1.5px dashed var(--border2);border-radius:9px;padding:10px 13px;cursor:pointer;transition:border-color 0.15s;}
 .cover-upload:hover{border-color:var(--rose);}
 .cover-upload-icon{font-size:20px;flex-shrink:0;}
@@ -404,37 +407,39 @@ const SAMPLE_EVS=[
 ];
 
 function sv(){
+  if(!_fbReady) return; // Firebase 尚未讀完，禁止寫入避免覆蓋雲端資料
   localStorage.setItem('mv3',JSON.stringify(evs));
-  if(_fbReady && window._fbSave) window._fbSave();
+  if(window._fbSave) window._fbSave();
 }
 
 window.addEventListener('tripapp:ready', function(e) {
   var uid = e.detail.user.uid;
   var DOC = 'users/' + uid + '/data/arts';
+
+  // 用 JSON 字串存，繞過 Firestore 不允許 "-1"/"+1" key 的限制
   window._fbSave = function() {
     window._fb.fsSet(DOC, { evs_json: JSON.stringify(evs) });
   };
+
   window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
       var d = snap.data();
-      // 讀 JSON 字串格式（新）或 evs 陣列格式（舊）
       if (d.evs_json) {
-        try { evs = JSON.parse(d.evs_json); } catch(e2) { evs = SAMPLE_EVS; }
+        try { evs = JSON.parse(d.evs_json); } catch(err) { evs = SAMPLE_EVS; }
       } else if (Array.isArray(d.evs) && d.evs.length) {
-        evs = d.evs;
+        evs = d.evs; // 相容舊格式，讀進來後下次 sv() 會轉成新格式
       } else {
         evs = SAMPLE_EVS;
       }
     } else {
-      // Firebase 完全沒有資料 → 插入範例並存入 Firebase
-      evs = SAMPLE_EVS;
+      evs = SAMPLE_EVS; // 全新用戶，初始化範例
     }
     _fbReady = true;
     localStorage.setItem('mv3', JSON.stringify(evs));
-    window._fbSave(); // 確保 Firebase 一定有最新資料（含範例初始化）
+    window._fbSave(); // 寫回 Firebase（確保範例初始化 & 舊格式轉換都存進去）
     render();
   }).catch(function(err) {
-    console.warn('Firebase 讀取失敗，使用 localStorage', err);
+    console.warn('Firebase 讀取失敗，fallback localStorage', err);
     var local = localStorage.getItem('mv3');
     evs = local ? JSON.parse(local) : SAMPLE_EVS;
     _fbReady = true;
@@ -470,7 +475,7 @@ function getList(){
 
 function render(){
   const el=document.getElementById('list');
-  if(!_fbReady){el.innerHTML='<div class="empty"><div class="eico">⏳</div>載入中…</div>';return;}
+  if(!_fbReady){el.innerHTML='<div class="empty"><div class="eico">⏳</div>同步中…</div>';return;}
   const list=getList();
   if(!list.length){el.innerHTML=`<div class="empty"><div class="eico">🎭</div>尚無活動記錄<br>點右上角 + 新增</div>`;return;}
   el.innerHTML=list.map(ev=>{
