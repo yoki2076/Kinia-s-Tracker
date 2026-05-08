@@ -161,7 +161,7 @@ Promise.all([
   // 把 Firestore / Storage 方法掛到 window._fb 供各頁面使用
   window._fb = {
     fsGet: function (path) { return firebase.firestore().doc(path).get(); },
-    fsSet: function (path, data) { return firebase.firestore().doc(path).set(data, { merge: true }); },
+    fsSet: function (path, data) { return firebase.firestore().doc(path).set(data, { merge: true }).catch(function(e){ console.error('fsSet failed:', path, e); throw e; }); },
     uploadFile: function (storagePath, file) {
       var ref = firebase.storage().ref(storagePath);
       return ref.put(file).then(function () { return ref.getDownloadURL(); });

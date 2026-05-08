@@ -388,26 +388,69 @@ let _fbReady=false;
 const SAMPLE_EVS=[
   {id:'1',title:'草東沒有派對 — 山海牛奶糖巡演',artist:'草東沒有派對',cat:'concert',status:'confirmed',
    date:'2025-09-14',time:'18:30',venue:'台中洲際棒球場',seat:'搖滾區 GA',note:'記得帶耳塞',days:'-1',added:Date.now()-5e6,
-   tl:{'-1':[{id:'a1',t:'10:00',n:'搭高鐵前往台中'},{id:'a2',t:'13:00',n:'逢甲午餐'},{id:'a3',t:'15:00',n:'Check-in 飯店'}],
-       '0':[{id:'b1',t:'16:00',n:'前往洲際棒球場'},{id:'b2',t:'18:30',n:'演唱會開始'},{id:'b3',t:'22:00',n:'散場宵夜'}]}},
+   tl:{'m1':[{id:'a1',t:'10:00',n:'搭高鐵前往台中'},{id:'a2',t:'13:00',n:'逢甲午餐'},{id:'a3',t:'15:00',n:'Check-in 飯店'}],
+       'd0':[{id:'b1',t:'16:00',n:'前往洲際棒球場'},{id:'b2',t:'18:30',n:'演唱會開始'},{id:'b3',t:'22:00',n:'散場宵夜'}]}},
   {id:'2',title:'歌劇魅影 40週年紀念版',artist:'The Phantom of the Opera',cat:'theater',status:'confirmed',
    date:'2025-08-03',time:'14:00',venue:'國家戲劇院',seat:'二樓正中央 C排',note:'',days:'0',added:Date.now()-3e6,
-   tl:{'0':[{id:'c1',t:'12:30',n:'捷運中正紀念堂'},{id:'c2',t:'13:00',n:'購節目單'},{id:'c3',t:'14:00',n:'第一幕'},{id:'c4',t:'15:20',n:'中場休息',o:'約20分鐘'},{id:'c5',t:'16:40',n:'演出結束'}]}},
+   tl:{'d0':[{id:'c1',t:'12:30',n:'捷運中正紀念堂'},{id:'c2',t:'13:00',n:'購節目單'},{id:'c3',t:'14:00',n:'第一幕'},{id:'c4',t:'15:20',n:'中場休息',o:'約20分鐘'},{id:'c5',t:'16:40',n:'演出結束'}]}},
   {id:'3',title:'奇美博物館 — 印象派特展',artist:'奇美博物館',cat:'arts',status:'confirmed',
    date:'2025-06-21',time:'10:00',venue:'台南奇美博物館',seat:'',note:'預約早場，帶相機',days:'-1+1',added:Date.now()-1e6,
-   tl:{'-1':[{id:'d1',t:'14:00',n:'高鐵到台南'},{id:'d2',t:'16:00',n:'安平老街散步'}],
-       '0':[{id:'e1',t:'09:30',n:'前往奇美'},{id:'e2',t:'10:00',n:'特展入場'},{id:'e3',t:'12:30',n:'館內午餐'},{id:'e4',t:'14:00',n:'常設展'}],
-       '+1':[{id:'f1',t:'09:00',n:'赤崁樓'},{id:'f2',t:'11:30',n:'高鐵返北'}]}},
+   tl:{'m1':[{id:'d1',t:'14:00',n:'高鐵到台南'},{id:'d2',t:'16:00',n:'安平老街散步'}],
+       'd0':[{id:'e1',t:'09:30',n:'前往奇美'},{id:'e2',t:'10:00',n:'特展入場'},{id:'e3',t:'12:30',n:'館內午餐'},{id:'e4',t:'14:00',n:'常設展'}],
+       'p1':[{id:'f1',t:'09:00',n:'赤崁樓'},{id:'f2',t:'11:30',n:'高鐵返北'}]}},
   {id:'5',title:'千與千尋 神隱少女',artist:'宮崎駿 / 吉卜力工作室',cat:'film',status:'confirmed',
    date:'2025-07-05',time:'14:20',venue:'信義威秀影城',seat:'廳12・H排 14號',note:'重映版，4K修復',days:'0',added:Date.now()-2e6,
-   tl:{'0':[{id:'g1',t:'13:30',n:'抵達威秀取票'},{id:'g2',t:'14:20',n:'電影開始'},{id:'g3',t:'16:50',n:'結束，逛信義商圈'}]}},
+   tl:{'d0':[{id:'g1',t:'13:30',n:'抵達威秀取票'},{id:'g2',t:'14:20',n:'電影開始'},{id:'g3',t:'16:50',n:'結束，逛信義商圈'}]}},
   {id:'4',title:'Taylor Swift — Eras Tour',artist:'Taylor Swift',cat:'concert',status:'pending',
    date:'2026-03-15',time:'19:00',venue:'台北小巨蛋（傳言）',seat:'',note:'等官宣！',days:'0',added:Date.now(),
-   tl:{'0':[]}},
+   tl:{'d0':[]}},
 ];
 
+// tl key 編碼：Firestore 不允許 "-1"/"+1" 開頭的 key
+// 用 m1/m2(minus前一後二天) d0(當天) p1/p2(plus後幾天) 代替
+function encKey(n){ return n===0?'d0':n<0?'m'+Math.abs(n):'p'+n; }
+function decKey(k){ if(k==='d0')return 0; if(k[0]==='m')return -parseInt(k.slice(1)); return parseInt(k.slice(1)); }
+
+function encodeTl(tl){
+  if(!tl) return {};
+  var r={};
+  Object.keys(tl).forEach(function(k){
+    var n=parseInt(k); // 舊格式 "-1","0","+1"
+    if(isNaN(n)) r[k]=tl[k]; // 已經是新格式，直接保留
+    else r[encKey(n)]=tl[k];
+  });
+  return r;
+}
+
+function decodeTl(tl){
+  if(!tl) return {};
+  var r={};
+  Object.keys(tl).forEach(function(k){
+    // 新格式 d0/m1/p1
+    if(k==='d0'||k[0]==='m'||k[0]==='p') r[String(decKey(k))]=tl[k];
+    else r[k]=tl[k]; // 舊格式，直接保留
+  });
+  return r;
+}
+
+function encodeEvs(arr){
+  return arr.map(function(ev){
+    var e=Object.assign({},ev);
+    e.tl=encodeTl(ev.tl);
+    return e;
+  });
+}
+
+function decodeEvs(arr){
+  return arr.map(function(ev){
+    var e=Object.assign({},ev);
+    e.tl=decodeTl(ev.tl);
+    return e;
+  });
+}
+
 function sv(){
-  if(!_fbReady) return; // Firebase 尚未讀完，禁止寫入避免覆蓋雲端資料
+  if(!_fbReady) return;
   localStorage.setItem('mv3',JSON.stringify(evs));
   if(window._fbSave) window._fbSave();
 }
@@ -416,27 +459,27 @@ window.addEventListener('tripapp:ready', function(e) {
   var uid = e.detail.user.uid;
   var DOC = 'users/' + uid + '/data/arts';
 
-  // 用 JSON 字串存，繞過 Firestore 不允許 "-1"/"+1" key 的限制
   window._fbSave = function() {
-    window._fb.fsSet(DOC, { evs_json: JSON.stringify(evs) });
+    // tl key 編碼後才存，避免 Firestore 拒絕 "-1"/"+1" key
+    window._fb.fsSet(DOC, { evs: encodeEvs(evs) }).catch(function(err){
+      console.error('Firebase 儲存失敗', err);
+    });
   };
 
   window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
       var d = snap.data();
-      if (d.evs_json) {
-        try { evs = JSON.parse(d.evs_json); } catch(err) { evs = SAMPLE_EVS; }
-      } else if (Array.isArray(d.evs) && d.evs.length) {
-        evs = d.evs; // 相容舊格式，讀進來後下次 sv() 會轉成新格式
+      if (Array.isArray(d.evs) && d.evs.length) {
+        evs = decodeEvs(d.evs); // tl key 解碼回 "-1"/"0"/"+1"
       } else {
         evs = SAMPLE_EVS;
       }
     } else {
-      evs = SAMPLE_EVS; // 全新用戶，初始化範例
+      evs = SAMPLE_EVS;
     }
     _fbReady = true;
     localStorage.setItem('mv3', JSON.stringify(evs));
-    window._fbSave(); // 寫回 Firebase（確保範例初始化 & 舊格式轉換都存進去）
+    window._fbSave();
     render();
   }).catch(function(err) {
     console.warn('Firebase 讀取失敗，fallback localStorage', err);
@@ -696,7 +739,7 @@ function addStp(){
   if(!n)return;
   const ev=evs.find(x=>x.id===pid);if(!ev)return;
   const de=document.getElementById('nday');
-  const k=de?String(de.value):'0';
+  const k=de?String(de.value):'0'; // 這裡仍用 "-1"/"0" 格式，sv() 時 encodeEvs 會轉換
   if(!ev.tl)ev.tl={};
   if(!ev.tl[k])ev.tl[k]=[];
   ev.tl[k].push({id:'s'+Date.now(),t,n,o});
