@@ -221,6 +221,19 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
 
 .empty{text-align:center;padding:56px 20px;color:var(--ink4);font-size:12.5px;line-height:2.4;}
 .eico{font-size:34px;margin-bottom:10px;opacity:0.4;}
+
+/* ── 封面圖 ── */
+.card-cover{width:100%;height:110px;object-fit:cover;display:block;border-bottom:0.5px solid var(--border);}
+.cover-upload{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1.5px dashed var(--border2);border-radius:9px;padding:10px 13px;cursor:pointer;transition:border-color 0.15s;}
+.cover-upload:hover{border-color:var(--rose);}
+.cover-upload-icon{font-size:20px;flex-shrink:0;}
+.cover-upload-txt{font-size:12px;color:var(--ink3);line-height:1.5;}
+.cover-upload-txt strong{color:var(--ink2);font-size:11px;}
+.cover-preview-wrap{position:relative;border-radius:9px;overflow:hidden;margin-bottom:4px;}
+.cover-preview-img{width:100%;height:140px;object-fit:cover;display:block;}
+.cover-preview-del{position:absolute;top:7px;right:7px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;line-height:1;}
+.panel-cover{width:100%;max-height:200px;object-fit:cover;display:block;}
+.cover-compress-hint{font-size:10px;color:var(--ink4);margin-top:4px;text-align:center;}
 </style>
 </head>
 <body>
@@ -329,6 +342,22 @@ body{font-family:'Noto Sans TC',sans-serif;background:var(--bg);color:var(--ink)
     <div class="fg"><label>購票平台</label><input class="mfi" id="fPlatform" placeholder="例：KKTIX・拓元・年代售票"></div>
     <div class="fg"><label>取票超商</label><input class="mfi" id="fPickup" placeholder="例：全家・7-11，或「電子票券」"></div>
     <div class="fg"><label>備忘錄</label><input class="mfi" id="fN" placeholder="其他備注…"></div>
+    <div class="fg">
+      <label>封面圖片 <span style="color:var(--ink4);font-weight:300;font-size:10px;">（自動壓縮至 20KB 以下）</span></label>
+      <div id="coverPreviewWrap" class="cover-preview-wrap" style="display:none;">
+        <img id="coverPreviewImg" class="cover-preview-img" src="" alt="封面預覽">
+        <button class="cover-preview-del" onclick="removeCover()" title="移除封面">×</button>
+      </div>
+      <div id="coverUploadArea" class="cover-upload" onclick="document.getElementById('fCover').click()">
+        <span class="cover-upload-icon">🖼</span>
+        <div class="cover-upload-txt">
+          <strong>點擊上傳封面圖片</strong><br>
+          JPG / PNG，自動壓縮至 20KB
+        </div>
+      </div>
+      <input type="file" id="fCover" accept="image/*" style="display:none" onchange="handleCover(this)">
+      <div class="cover-compress-hint" id="coverHint"></div>
+    </div>
   </div>
   <div class="mft">
     <button class="bno" onclick="closeMdl()">取消</button>
@@ -349,6 +378,7 @@ const CLBL={concert:'演唱會',theater:'舞台劇',arts:'藝文活動',film:'�
 let evs=JSON.parse(localStorage.getItem('mv3')||'[]');
 let filt='all',srt='date',pid=null,eid=null;
 let mcat='concert',mst='confirmed',mdays='0',ttm=null;
+let mCoverB64=null; // 目前編輯中的封面 base64
 
 if(!evs.length){
   evs=[
@@ -454,6 +484,7 @@ function render(){
     const tstr=isPend?`預計 ${ev.date.slice(5).replace('-','/')}`:ev.time||'—';
     return`<div class="card ${catCls}${isPend?' pend-card':''}" onclick="openPnl('${ev.id}')">
       <div class="stripe"></div>
+      ${ev.coverURL?`<img class="card-cover" src="${ev.coverURL}" alt="封面" loading="lazy">`:''}
       <div class="card-inner">
         <div class="card-top">
           ${dblk}
@@ -534,6 +565,21 @@ function openPnl(id){
   }
 
   renderPB(ev);
+
+  // 封面圖
+  const panelEl = document.getElementById('panel');
+  let existingCover = panelEl.querySelector('.panel-cover');
+  if (existingCover) existingCover.remove();
+  if (ev.coverURL) {
+    const img = document.createElement('img');
+    img.className = 'panel-cover';
+    img.src = ev.coverURL;
+    img.alt = '封面';
+    // 插入在 pds 之後、pb 之前
+    const pds = document.getElementById('pds');
+    pds.parentNode.insertBefore(img, pds.nextSibling);
+  }
+
   document.getElementById('pov').classList.add('open');
   document.getElementById('panel').classList.add('open');
 }
@@ -646,7 +692,13 @@ function delStp(sid,off){
 }
 
 function svNote(v){const ev=evs.find(x=>x.id===pid);if(!ev)return;ev.note=v;sv();render();}
-function closePnl(){document.getElementById('pov').classList.remove('open');document.getElementById('panel').classList.remove('open');pid=null;}
+function closePnl(){
+  document.getElementById('pov').classList.remove('open');
+  document.getElementById('panel').classList.remove('open');
+  const c = document.querySelector('.panel-cover');
+  if (c) c.remove();
+  pid=null;
+}
 
 // MODAL
 function openAdd(){
@@ -659,6 +711,7 @@ function openAdd(){
   document.getElementById('pnote').classList.remove('show');
   document.getElementById('mttl').textContent='新增活動';
   document.getElementById('mDelBtn').style.display='none';
+  resetCoverUI();
   document.getElementById('mov').classList.add('open');
   document.getElementById('modal').classList.add('open');
   setTimeout(()=>document.getElementById('fT').focus(),350);
@@ -680,6 +733,16 @@ function openEdit(id){
   document.getElementById('pnote').classList.toggle('show',mst==='pending');
   document.getElementById('mttl').textContent='編輯活動';
   document.getElementById('mDelBtn').style.display='flex';
+  // 封面
+  if(ev.coverURL){
+    document.getElementById('coverPreviewImg').src=ev.coverURL;
+    document.getElementById('coverPreviewWrap').style.display='block';
+    document.getElementById('coverUploadArea').style.display='none';
+    document.getElementById('coverHint').textContent='';
+    mCoverFile=null; window._pendingDeleteCover=false;
+  } else {
+    resetCoverUI();
+  }
   document.getElementById('mov').classList.add('open');
   document.getElementById('modal').classList.add('open');
 }
@@ -710,22 +773,49 @@ function saveEv(){
   if(!title){document.getElementById('fT').style.borderColor='var(--rose)';return;}
   if(!date){document.getElementById('fD').style.borderColor='var(--rose)';return;}
   const offs=parseOff(mdays);
+
+  // 先建立或取得 event 物件
+  var evObj;
   if(eid){
-    const ev=evs.find(x=>x.id===eid);
-    ev.title=title;ev.artist=document.getElementById('fA').value.trim();
-    ev.cat=mcat;ev.status=mst;ev.date=date;ev.time=document.getElementById('fTm').value;
-    ev.venue=document.getElementById('fV').value.trim();ev.seat=document.getElementById('fSeat').value.trim();ev.platform=document.getElementById('fPlatform').value.trim();ev.pickup=document.getElementById('fPickup').value.trim();ev.note=document.getElementById('fN').value.trim();
-    ev.days=mdays;
-    if(!ev.tl)ev.tl={};
-    offs.forEach(o=>{if(!ev.tl[String(o)])ev.tl[String(o)]=[];});
+    evObj=evs.find(x=>x.id===eid);
+    evObj.title=title;evObj.artist=document.getElementById('fA').value.trim();
+    evObj.cat=mcat;evObj.status=mst;evObj.date=date;evObj.time=document.getElementById('fTm').value;
+    evObj.venue=document.getElementById('fV').value.trim();evObj.seat=document.getElementById('fSeat').value.trim();
+    evObj.platform=document.getElementById('fPlatform').value.trim();evObj.pickup=document.getElementById('fPickup').value.trim();
+    evObj.note=document.getElementById('fN').value.trim();evObj.days=mdays;
+    if(!evObj.tl)evObj.tl={};
+    offs.forEach(o=>{if(!evObj.tl[String(o)])evObj.tl[String(o)]=[];});
+    // 移除封面
+    if(window._pendingDeleteCover && evObj.coverURL) {
+      var uid = localStorage.getItem('tripApp_uid');
+      if(uid && window._fb) window._fb.deleteFile('users/'+uid+'/arts/'+evObj.id+'/cover.jpg');
+      evObj.coverURL = null;
+      window._pendingDeleteCover = false;
+    }
   } else {
     const tl={};offs.forEach(o=>{tl[String(o)]=[];});
-    evs.push({id:'e'+Date.now(),title,artist:document.getElementById('fA').value.trim(),
+    evObj={id:'e'+Date.now(),title,artist:document.getElementById('fA').value.trim(),
       cat:mcat,status:mst,date,time:document.getElementById('fTm').value,
-      venue:document.getElementById('fV').value.trim(),seat:document.getElementById('fSeat').value.trim(),platform:document.getElementById('fPlatform').value.trim(),pickup:document.getElementById('fPickup').value.trim(),note:document.getElementById('fN').value.trim(),
-      days:mdays,added:Date.now(),tl});
+      venue:document.getElementById('fV').value.trim(),seat:document.getElementById('fSeat').value.trim(),
+      platform:document.getElementById('fPlatform').value.trim(),pickup:document.getElementById('fPickup').value.trim(),
+      note:document.getElementById('fN').value.trim(),
+      coverURL:null,days:mdays,added:Date.now(),tl};
+    evs.push(evObj);
   }
-  sv();render();closeMdl();
+
+  // 取得 uid
+  var uid = localStorage.getItem('tripApp_uid');
+
+  // 若有新圖片要上傳
+  if(mCoverFile && uid && window._fb) {
+    // 先儲存（無封面版本），關閉 modal
+    sv(); render(); closeMdl();
+    uploadCoverIfNeeded(uid, evObj.id).then(function(url) {
+      if(url) { evObj.coverURL = url; sv(); render(); }
+    });
+  } else {
+    sv(); render(); closeMdl();
+  }
 }
 
 function closeMdl(){document.getElementById('mov').classList.remove('open');document.getElementById('modal').classList.remove('open');}
@@ -742,6 +832,111 @@ function doDel(id){
   const t=document.getElementById('toast');t.classList.add('show');
   document.getElementById('tdel').onclick=()=>{evs=evs.filter(x=>x.id!==id);sv();render();t.classList.remove('show');};
   clearTimeout(ttm);ttm=setTimeout(()=>t.classList.remove('show'),5000);
+}
+
+// ── 圖片壓縮（目標 20KB 以下）→ 回傳 Blob ─────────────
+function compressToBlob(file, targetKB, callback) {
+  targetKB = targetKB || 20;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var img = new Image();
+    img.onload = function() {
+      var MAX = targetKB * 1024;
+      var canvas = document.createElement('canvas');
+      var w = img.width, h = img.height;
+      var maxDim = 900;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      var quality = 0.85, tries = 0;
+      function attempt() {
+        canvas.toBlob(function(blob) {
+          if (!blob) { callback(null, 0); return; }
+          if (blob.size <= MAX || quality <= 0.08 || tries > 14) {
+            callback(blob, blob.size);
+          } else {
+            quality = Math.max(0.08, quality - 0.07);
+            tries++;
+            if (tries > 7) {
+              w = Math.round(w * 0.82); h = Math.round(h * 0.82);
+              canvas.width = w; canvas.height = h;
+              ctx.drawImage(img, 0, 0, w, h);
+            }
+            attempt();
+          }
+        }, 'image/jpeg', quality);
+      }
+      attempt();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── 封面狀態 ───────────────────────────────────────────
+var mCoverFile = null;   // 待上傳的原始 File
+var mCoverPreviewURL = null; // 本地預覽用 ObjectURL
+// mCoverB64 不再使用，改用 ev.coverURL 存 Storage 下載網址
+
+function handleCover(input) {
+  var file = input.files[0];
+  if (!file) return;
+  mCoverFile = file;
+  // 顯示本地預覽（不壓縮，只是預覽）
+  if (mCoverPreviewURL) URL.revokeObjectURL(mCoverPreviewURL);
+  mCoverPreviewURL = URL.createObjectURL(file);
+  document.getElementById('coverPreviewImg').src = mCoverPreviewURL;
+  document.getElementById('coverPreviewWrap').style.display = 'block';
+  document.getElementById('coverUploadArea').style.display = 'none';
+  document.getElementById('coverHint').textContent = '✓ 已選取，儲存時自動壓縮並上傳';
+}
+
+function removeCover() {
+  mCoverFile = null;
+  if (mCoverPreviewURL) { URL.revokeObjectURL(mCoverPreviewURL); mCoverPreviewURL = null; }
+  document.getElementById('coverPreviewWrap').style.display = 'none';
+  document.getElementById('coverUploadArea').style.display = 'flex';
+  document.getElementById('coverHint').textContent = '';
+  document.getElementById('fCover').value = '';
+  // 標記要刪除現有封面
+  window._pendingDeleteCover = true;
+}
+
+function resetCoverUI() {
+  mCoverFile = null;
+  window._pendingDeleteCover = false;
+  if (mCoverPreviewURL) { URL.revokeObjectURL(mCoverPreviewURL); mCoverPreviewURL = null; }
+  document.getElementById('coverPreviewWrap').style.display = 'none';
+  document.getElementById('coverUploadArea').style.display = 'flex';
+  document.getElementById('coverHint').textContent = '';
+  document.getElementById('fCover').value = '';
+}
+
+// ── 上傳封面到 Storage，回傳 Promise<downloadURL|null> ─
+function uploadCoverIfNeeded(uid, evId) {
+  if (!mCoverFile) return Promise.resolve(null);
+  var hint = document.getElementById('coverHint');
+  hint.textContent = '壓縮中…';
+  return new Promise(function(resolve) {
+    compressToBlob(mCoverFile, 20, function(blob, size) {
+      if (!blob) { hint.textContent = '壓縮失敗'; resolve(null); return; }
+      hint.textContent = '上傳中… (' + (size/1024).toFixed(1) + ' KB)';
+      var path = 'users/' + uid + '/arts/' + evId + '/cover.jpg';
+      window._fb.uploadBlob(path, blob).then(function(url) {
+        hint.textContent = '✓ 上傳完成 (' + (size/1024).toFixed(1) + ' KB)';
+        mCoverFile = null;
+        resolve(url);
+      }).catch(function(err) {
+        hint.textContent = '上傳失敗：' + err.message;
+        resolve(null);
+      });
+    });
+  });
 }
 
 function setFilt(f,el){filt=f;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');render();}
