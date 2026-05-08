@@ -733,8 +733,10 @@ function closePnl(){
 // MODAL
 function openAdd(){
   eid=null;mcat='concert';mst='confirmed';mdays='0';
-  ['fT','fA','fV','fSeat','fPlatform','fPickup','fN'].forEach(i=>document.getElementById(i).value='');
-  document.getElementById('fD').value='';
+  ['fT','fA','fV','fSeat','fPlatform','fPickup','fN'].forEach(i=>{
+    var el=document.getElementById(i);el.value='';el.style.borderColor='';
+  });
+  var fD=document.getElementById('fD');fD.value='';fD.style.borderColor='';
   document.getElementById('fTm').value='19:30';
   syncC();syncS();syncD();
   document.getElementById('dhint').innerHTML='';
@@ -742,6 +744,7 @@ function openAdd(){
   document.getElementById('mttl').textContent='新增活動';
   document.getElementById('mDelBtn').style.display='none';
   resetCoverUI();
+  document.querySelector('.mbdy').scrollTop=0;
   document.getElementById('mov').classList.add('open');
   document.getElementById('modal').classList.add('open');
   setTimeout(()=>document.getElementById('fT').focus(),350);
@@ -759,6 +762,7 @@ function openEdit(id){
   document.getElementById('fPlatform').value=ev.platform||'';
   document.getElementById('fPickup').value=ev.pickup||'';
   document.getElementById('fN').value=ev.note||'';
+  ['fT','fA','fV','fSeat','fPlatform','fPickup','fN','fD'].forEach(i=>{document.getElementById(i).style.borderColor='';});
   syncC();syncS();syncD();updHint();
   document.getElementById('pnote').classList.toggle('show',mst==='pending');
   document.getElementById('mttl').textContent='編輯活動';
@@ -774,6 +778,7 @@ function openEdit(id){
     resetCoverUI();
   }
   document.getElementById('mov').classList.add('open');
+  document.querySelector('.mbdy').scrollTop=0;
   document.getElementById('modal').classList.add('open');
 }
 
