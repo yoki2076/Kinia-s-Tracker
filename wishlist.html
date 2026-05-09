@@ -1167,12 +1167,16 @@ const W = (() => {
     items = JSON.parse(localStorage.getItem('wishlist_items')||'[]');
     const savedCats = JSON.parse(localStorage.getItem('wishlist_cats')||'null');
     if (savedCats && savedCats.length) categories = savedCats;
+    displayCurrency = localStorage.getItem('wishlist_cur')||displayCurrency;
     render();
   }
   return {render,setView,setCurrency,setCat,toggleBought,toggleFav,deleteItem,toggleArchive,
     openAddModal,openEditModal,closeModal,handleImgUpload,saveItem,
     openCatManager,closeCatModal,addCategory,removeCat,saveCats,openEmojiPicker,
-    dragStart,dragOver,dragLeave,dragDrop,_editingCats,init,reload,openExpand,closeExpand};
+    dragStart,dragOver,dragLeave,dragDrop,_editingCats,init,reload,openExpand,closeExpand,
+    // ✅ 新增：讓外部 Firebase sync 可以讀到閉包內的最新資料
+    getState: function() { return { items: items, cats: categories, currency: displayCurrency }; },
+  };
 })();
 
 // ═══════════════════════════════════════════
@@ -1479,7 +1483,10 @@ const P = (() => {
   return {render,setView,setCat,toggleFav,toggleVisited,deletePlace,toggleArchive,setRating,
     openAddModal,openEditModal,closeModal,handleImgUpload,savePlace,
     openCatManager,closeCatModal,addCategory,removeCat,saveCats,openEmojiPicker,
-    dragStart,dragOver,dragLeave,dragDrop,_editingCats,init,reload,_pickCat,openExpand,closeExpand};
+    dragStart,dragOver,dragLeave,dragDrop,_editingCats,init,reload,_pickCat,openExpand,closeExpand,
+    // ✅ 新增：讓外部 Firebase sync 可以讀到閉包內的最新資料
+    getState: function() { return { items: places, cats: categories }; },
+  };
 })();
 
 // ── Boot ──
@@ -1494,15 +1501,14 @@ window.addEventListener('tripapp:ready', function(e) {
   var P_DOC = 'users/' + uid + '/data/placelist';
 
   window._fbSave = function() {
-    var wItems = JSON.parse(localStorage.getItem('wishlist_items')||'[]');
-    var wCats  = JSON.parse(localStorage.getItem('wishlist_cats')||'[]');
-    var wCur   = localStorage.getItem('wishlist_cur')||'TWD';
-    window._fb.fsSet(W_DOC, { items: wItems, cats: wCats, currency: wCur });
+    // ✅ 修正：用模組的 getState() 讀記憶體變數，不從 localStorage 讀
+    var ws = W.getState();
+    window._fb.fsSet(W_DOC, { items: ws.items, cats: ws.cats, currency: ws.currency });
   };
   window._fbSavePlaces = function() {
-    var pItems = JSON.parse(localStorage.getItem('placelist_items')||'[]');
-    var pCats  = JSON.parse(localStorage.getItem('placelist_cats')||'[]');
-    window._fb.fsSet(P_DOC, { items: pItems, cats: pCats });
+    // ✅ 修正：用模組的 getState() 讀記憶體變數，避免讀到 P 閉包外讀不到的變數
+    var ps = P.getState();
+    window._fb.fsSet(P_DOC, { items: ps.items, cats: ps.cats });
   };
 
   // 兩個都讀完才標記 ready
@@ -1515,6 +1521,7 @@ window.addEventListener('tripapp:ready', function(e) {
     // Wishlist
     if (wSnap.exists()) {
       var wd = wSnap.data();
+      // ✅ 修正：把雲端資料存入 localStorage，再讓 reload() 更新記憶體
       if (Array.isArray(wd.items)) localStorage.setItem('wishlist_items', JSON.stringify(wd.items));
       if (Array.isArray(wd.cats) && wd.cats.length) localStorage.setItem('wishlist_cats', JSON.stringify(wd.cats));
       if (wd.currency) localStorage.setItem('wishlist_cur', wd.currency);

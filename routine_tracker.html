@@ -405,7 +405,7 @@ function saveToday(){
     body:S.bodySkincare.filter(function(p){return p.used;}).map(function(p){return Object.assign({},p);}),
   };
 }
-saveToday();
+// saveToday() 只在 renderAll() 末端被呼叫，此處不再提前執行
 
 function buildSampleArchive(){
   var y=now.getFullYear(),m=now.getMonth();
@@ -428,7 +428,7 @@ function buildSampleArchive(){
     }
   }
 }
-buildSampleArchive();
+// buildSampleArchive 只在第一次使用（雲端無資料）時才呼叫，移到 Firebase 回調裡
 
 function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach(function(b,i){b.classList.toggle('active',['daily','hygiene','archive'][i]===tab);});
@@ -437,7 +437,7 @@ function switchTab(tab){
   if(tab==='archive')renderArchive();
 }
 
-function renderAll(){renderRoutines();renderChecklist();renderHabits();renderShower();renderSkincare();saveToday();}
+function renderAll(){renderRoutines();renderChecklist();renderHabits();renderShower();renderSkincare();if(_fbReady)saveToday();}
 
 function renderRoutines(){
   var el=document.getElementById('routineList');
@@ -782,29 +782,32 @@ var _fbReady = false;
 window.addEventListener('tripapp:ready', function(e) {
   var uid = e.detail.user.uid;
   var DOC = 'users/' + uid + '/data/routine';
-  var _origSaveToday = saveToday;
-  saveToday = function() {
-    _origSaveToday();
-    if (_fbReady && window._fbSave) window._fbSave();
-  };
+
   window._fbSave = function() {
     window._fb.fsSet(DOC, { S: S });
   };
+
   window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
+      // ✅ 修正：用雲端資料完整取代 S，不做 merge 以免舊本地範例污染
       var d = snap.data();
       if (d.S) {
-        S = Object.assign(S, d.S);
+        S = d.S;
       }
     } else {
-      // 第一次用：把目前的 S（含預設範例）上傳
-      window._fb.fsSet(DOC, { S: S });
+      // 第一次使用：產生範例資料並上傳
+      buildSampleArchive();
+      saveToday();
+      window._fbSave();
     }
     _fbReady = true;
     renderAll();
   }).catch(function(err) {
     console.warn('Firebase 讀取失敗', err);
+    // 離線時仍產生範例方便使用
+    buildSampleArchive();
     _fbReady = true;
+    renderAll();
   });
 });
 </script>

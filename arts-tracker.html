@@ -379,13 +379,14 @@ const WD=['日','一','二','三','四','五','六'];
 const MO=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const CLBL={concert:'演唱會',theater:'舞台劇',arts:'藝文活動',film:'電影'};
 
-let evs=JSON.parse(localStorage.getItem('mv3')||'[]');
+// ✅ 修正：初始化時先用空陣列，等 Firebase 回傳再決定是否用範例
+let evs=[];
 let filt='all',srt='date',pid=null,eid=null;
 let mcat='concert',mst='confirmed',mdays='0',ttm=null;
 let mCoverB64=null; // 目前編輯中的封面 base64
 
-if(!evs.length){
-  evs=[
+// 預設範例資料，只在第一次使用（雲端無資料）時才套用
+function getDefaultEvs(){return[
     {id:'1',title:'草東沒有派對 — 山海牛奶糖巡演',artist:'草東沒有派對',cat:'concert',status:'confirmed',
      date:'2025-09-14',time:'18:30',venue:'台中洲際棒球場',seat:'搖滾區 GA',note:'記得帶耳塞',days:'-1',added:Date.now()-5e6,
      tl:{'-1':[{id:'a1',t:'10:00',n:'搭高鐵前往台中'},{id:'a2',t:'13:00',n:'逢甲午餐'},{id:'a3',t:'15:00',n:'Check-in 飯店'}],
@@ -404,20 +405,18 @@ if(!evs.length){
     {id:'4',title:'Taylor Swift — Eras Tour',artist:'Taylor Swift',cat:'concert',status:'pending',
      date:'2026-03-15',time:'19:00',venue:'台北小巨蛋（傳言）',seat:'',note:'等官宣！',days:'0',added:Date.now(),
      tl:{'0':[]}},
-  ];
-  sv();
-}
+];}
 
 function sv(){
   localStorage.setItem('mv3',JSON.stringify(evs));
   if(window._fbSave) window._fbSave();
 }
 
+
 window.addEventListener('tripapp:ready', function(e) {
   var uid = e.detail.user.uid;
   var DOC = 'users/' + uid + '/data/arts';
 
-  // 用 JSON 字串存整個 evs，完全避開 Firestore 的 field name 限制
   window._fbSave = function() {
     window._fb.fsSet(DOC, { data: JSON.stringify(evs) });
   };
@@ -426,19 +425,20 @@ window.addEventListener('tripapp:ready', function(e) {
     if (snap.exists()) {
       var d = snap.data();
       if (d.data) {
-        // 新格式：JSON 字串
+        // ✅ 修正：只從雲端讀取，不再無條件寫回
         try { evs = JSON.parse(d.data); } catch(e) { evs = []; }
       } else if (Array.isArray(d.evs) && d.evs.length) {
-        // 舊格式相容：直接用，下次 sv() 會轉成新格式
+        // 舊格式相容：讀入後下次存檔會轉成新格式
         evs = d.evs;
+        window._fbSave(); // 只在舊格式升級時寫一次
       }
-    }
-    // 無論如何都存一次，確保格式是新的、且範例有被寫進去
-    if (!evs.length) {
-      evs = JSON.parse(localStorage.getItem('mv3') || '[]');
+      // 雲端有資料就不管 localStorage
+    } else {
+      // ✅ 第一次使用：套用範例資料並上傳
+      evs = getDefaultEvs();
+      window._fbSave(); // 只在第一次時寫入
     }
     localStorage.setItem('mv3', JSON.stringify(evs));
-    window._fbSave();
     render();
   }).catch(function(err) {
     console.warn('Firebase 讀取失敗', err);

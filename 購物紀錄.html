@@ -1109,11 +1109,10 @@ window.addEventListener('tripapp:ready', function(e) {
       if (Array.isArray(d.expenses)) {
         expenses = d.expenses;
         nextId = d.nextId || nextId;
-      } else {
-        expenses = [];
       }
     } else {
-      expenses = [];
+      // ✅ 修正：第一次使用時上傳初始資料（而非清空 expenses）
+      window._fbSave();
     }
     _fbReady = true;
     updateHeader();
