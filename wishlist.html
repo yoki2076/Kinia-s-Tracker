@@ -1170,13 +1170,23 @@ const W = (() => {
     displayCurrency = localStorage.getItem('wishlist_cur')||displayCurrency;
     render();
   }
+  // ✅ 暴露給外部 Firebase sync 使用（讀閉包內的最新 in-memory 變數）
+  function _getState() { return { items: items, cats: categories, currency: displayCurrency }; }
+  function _setState(data) {
+    if (Array.isArray(data.items)) items = data.items;
+    if (Array.isArray(data.cats) && data.cats.length) categories = data.cats;
+    if (data.currency) displayCurrency = data.currency;
+    // 同步到 localStorage
+    localStorage.setItem('wishlist_items', JSON.stringify(items));
+    localStorage.setItem('wishlist_cats', JSON.stringify(categories));
+    localStorage.setItem('wishlist_cur', displayCurrency);
+    render();
+  }
   return {render,setView,setCurrency,setCat,toggleBought,toggleFav,deleteItem,toggleArchive,
     openAddModal,openEditModal,closeModal,handleImgUpload,saveItem,
     openCatManager,closeCatModal,addCategory,removeCat,saveCats,openEmojiPicker,
     dragStart,dragOver,dragLeave,dragDrop,_editingCats,init,reload,openExpand,closeExpand,
-    // ✅ 新增：讓外部 Firebase sync 可以讀到閉包內的最新資料
-    getState: function() { return { items: items, cats: categories, currency: displayCurrency }; },
-  };
+    _getState,_setState};
 })();
 
 // ═══════════════════════════════════════════
@@ -1480,13 +1490,20 @@ const P = (() => {
     if (savedCats && savedCats.length) categories = savedCats;
     render();
   }
+  // ✅ 暴露給外部 Firebase sync 使用（讀閉包內的最新 in-memory 變數）
+  function _getState() { return { items: places, cats: categories }; }
+  function _setState(data) {
+    if (Array.isArray(data.items)) places = data.items;
+    if (Array.isArray(data.cats) && data.cats.length) categories = data.cats;
+    localStorage.setItem('placelist_items', JSON.stringify(places));
+    localStorage.setItem('placelist_cats', JSON.stringify(categories));
+    render();
+  }
   return {render,setView,setCat,toggleFav,toggleVisited,deletePlace,toggleArchive,setRating,
     openAddModal,openEditModal,closeModal,handleImgUpload,savePlace,
     openCatManager,closeCatModal,addCategory,removeCat,saveCats,openEmojiPicker,
     dragStart,dragOver,dragLeave,dragDrop,_editingCats,init,reload,_pickCat,openExpand,closeExpand,
-    // ✅ 新增：讓外部 Firebase sync 可以讀到閉包內的最新資料
-    getState: function() { return { items: places, cats: categories }; },
-  };
+    _getState,_setState};
 })();
 
 // ── Boot ──
@@ -1500,15 +1517,14 @@ window.addEventListener('tripapp:ready', function(e) {
   var W_DOC = 'users/' + uid + '/data/wishlist';
   var P_DOC = 'users/' + uid + '/data/placelist';
 
+  // ✅ 用 _getState() 讀閉包內的最新記憶體資料，不從 localStorage 讀
   window._fbSave = function() {
-    // ✅ 修正：用模組的 getState() 讀記憶體變數，不從 localStorage 讀
-    var ws = W.getState();
-    window._fb.fsSet(W_DOC, { items: ws.items, cats: ws.cats, currency: ws.currency });
+    var st = W._getState();
+    window._fb.fsSet(W_DOC, { items: st.items, cats: st.cats, currency: st.currency });
   };
   window._fbSavePlaces = function() {
-    // ✅ 修正：用模組的 getState() 讀記憶體變數，避免讀到 P 閉包外讀不到的變數
-    var ps = P.getState();
-    window._fb.fsSet(P_DOC, { items: ps.items, cats: ps.cats });
+    var st = P._getState();
+    window._fb.fsSet(P_DOC, { items: st.items, cats: st.cats });
   };
 
   // 兩個都讀完才標記 ready
@@ -1518,30 +1534,21 @@ window.addEventListener('tripapp:ready', function(e) {
   ]).then(function(results) {
     var wSnap = results[0], pSnap = results[1];
 
-    // Wishlist
+    // ✅ 用 _setState() 直接更新模組記憶體，並同步到 localStorage
     if (wSnap.exists()) {
-      var wd = wSnap.data();
-      // ✅ 修正：把雲端資料存入 localStorage，再讓 reload() 更新記憶體
-      if (Array.isArray(wd.items)) localStorage.setItem('wishlist_items', JSON.stringify(wd.items));
-      if (Array.isArray(wd.cats) && wd.cats.length) localStorage.setItem('wishlist_cats', JSON.stringify(wd.cats));
-      if (wd.currency) localStorage.setItem('wishlist_cur', wd.currency);
+      W._setState(wSnap.data());
     } else {
-      // 第一次：把本地資料上傳
+      // 第一次使用：上傳目前的初始資料
       window._fbSave();
     }
 
-    // Placelist
     if (pSnap.exists()) {
-      var pd = pSnap.data();
-      if (Array.isArray(pd.items)) localStorage.setItem('placelist_items', JSON.stringify(pd.items));
-      if (Array.isArray(pd.cats) && pd.cats.length) localStorage.setItem('placelist_cats', JSON.stringify(pd.cats));
+      P._setState(pSnap.data());
     } else {
       window._fbSavePlaces();
     }
 
     _fbReady = true;
-    if (window.W && window.W.reload) window.W.reload();
-    if (window.P && window.P.reload) window.P.reload();
 
   }).catch(function(err) {
     console.warn('Firebase 讀取失敗', err);

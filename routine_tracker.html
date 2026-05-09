@@ -405,7 +405,7 @@ function saveToday(){
     body:S.bodySkincare.filter(function(p){return p.used;}).map(function(p){return Object.assign({},p);}),
   };
 }
-// saveToday() 只在 renderAll() 末端被呼叫，此處不再提前執行
+// saveToday() 移到 Firebase 讀取完成後才呼叫，避免假資料污染雲端
 
 function buildSampleArchive(){
   var y=now.getFullYear(),m=now.getMonth();
@@ -428,7 +428,7 @@ function buildSampleArchive(){
     }
   }
 }
-// buildSampleArchive 只在第一次使用（雲端無資料）時才呼叫，移到 Firebase 回調裡
+// buildSampleArchive() 移到 Firebase 回呼裡，只在第一次使用時執行
 
 function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach(function(b,i){b.classList.toggle('active',['daily','hygiene','archive'][i]===tab);});
@@ -787,24 +787,30 @@ window.addEventListener('tripapp:ready', function(e) {
     window._fb.fsSet(DOC, { S: S });
   };
 
+  // saveToday 觸發 Firebase 儲存
+  var _origSaveToday = saveToday;
+  saveToday = function() {
+    _origSaveToday();
+    if (_fbReady) window._fbSave();
+  };
+
   window._fb.fsGet(DOC).then(function(snap) {
     if (snap.exists()) {
-      // ✅ 修正：用雲端資料完整取代 S，不做 merge 以免舊本地範例污染
       var d = snap.data();
       if (d.S) {
+        // ✅ 直接覆蓋，不用 Object.assign merge（避免本地假資料污染雲端資料）
         S = d.S;
       }
     } else {
-      // 第一次使用：產生範例資料並上傳
+      // 第一次使用：產生範例 archive 並上傳
       buildSampleArchive();
-      saveToday();
+      saveToday();  // 把今天的狀態存進 S.archive
       window._fbSave();
     }
     _fbReady = true;
     renderAll();
   }).catch(function(err) {
-    console.warn('Firebase 讀取失敗', err);
-    // 離線時仍產生範例方便使用
+    console.warn('Firebase 讀取失敗，使用本地模式', err);
     buildSampleArchive();
     _fbReady = true;
     renderAll();
