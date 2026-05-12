@@ -407,9 +407,10 @@ function _defaultEvs(){return[
      tl:{'0':[]}},
 ];}
 
+var _fbReady = false;
 function sv(){
   localStorage.setItem('mv3',JSON.stringify(evs));
-  if(window._fbSave) window._fbSave();
+  if(_fbReady && window._fbSave) window._fbSave();
 }
 
 window.addEventListener('tripapp:ready', function(e) {
@@ -440,12 +441,14 @@ window.addEventListener('tripapp:ready', function(e) {
       window._fbSave();
     }
     localStorage.setItem('mv3', JSON.stringify(evs));
+    _fbReady = true;
     render();
   }).catch(function(err) {
     console.warn('Firebase 讀取失敗，使用本地快取', err);
     // 離線降級：嘗試讀 localStorage
     var cached = localStorage.getItem('mv3');
     evs = cached ? JSON.parse(cached) : _defaultEvs();
+    _fbReady = true;
     render();
   });
 });
