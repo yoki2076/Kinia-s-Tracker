@@ -182,16 +182,36 @@ Promise.all([
       var wall = document.getElementById('auth-wall');
       if (wall) wall.remove();
       createAuthWall(false);
-      document.getElementById('ag-signin-btn').onclick = function () {
-        var provider = new firebase.auth.GoogleAuthProvider();
-        if (/Mobi|Android|iPhone/i.test(navigator.userAgent)) {
-          firebase.auth().signInWithRedirect(provider);
-        } else {
+      // 偵測 WebView（Claude app、LINE、Instagram 等內建瀏覽器）
+      function isWebView() {
+        var ua = navigator.userAgent;
+        if (/iPhone|iPad/i.test(ua)) {
+          return !/Safari\//.test(ua) || /GSA\/|FBAN|FBAV|Line\//.test(ua);
+        }
+        if (/Android/i.test(ua)) {
+          return /wv\)|Version\/[\d.]+.*Mobile/.test(ua);
+        }
+        return false;
+      }
+
+      if (isWebView()) {
+        var btn = document.getElementById('ag-signin-btn');
+        btn.innerHTML = '<span style="font-size:16px">🌐</span> 在 Safari 中開啟';
+        btn.onclick = function () { window.open(location.href, '_blank'); };
+        var note = document.querySelector('#auth-wall .auth-note');
+        if (note) {
+          note.innerHTML = '⚠️ 請點上方按鈕，用 Safari 開啟此頁再登入<br>（Google 不允許在 App 內建瀏覽器登入）';
+          note.style.color = 'rgba(255,220,100,0.9)';
+        }
+      } else {
+        document.getElementById('ag-signin-btn').onclick = function () {
+          var provider = new firebase.auth.GoogleAuthProvider();
+          // Safari ITP 封鎖 redirect 的第三方 cookie，一律改用 popup
           firebase.auth().signInWithPopup(provider).catch(function (e) {
             alert('登入失敗：' + e.message);
           });
-        }
-      };
+        };
+      }
     }
   });
 

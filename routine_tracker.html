@@ -654,7 +654,11 @@ function openEdit(ds){
 }
 function closeEdit(){document.getElementById('editOverlay').classList.remove('open');editingDateStr=null;}
 function saveEdit(){
-  if(editingDateStr){S.archive[editingDateStr]=JSON.parse(JSON.stringify(editState));renderArchive();}
+  if(editingDateStr){
+    S.archive[editingDateStr]=JSON.parse(JSON.stringify(editState));
+    renderArchive();
+    if(_fbReady && window._fbSave) window._fbSave();
+  }
   closeEdit();
 }
 function renderEditPanel(){
