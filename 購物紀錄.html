@@ -1104,7 +1104,7 @@ window.addEventListener('tripapp:ready', function(e) {
     window._fb.fsSet(DOC, { expenses: expenses, nextId: nextId });
   };
   window._fb.fsGet(DOC).then(function(snap) {
-    if (snap.exists()) {
+    if (snap.exists) {
       var d = snap.data();
       // ✅ 雲端有資料：直接用雲端資料覆蓋
       if (Array.isArray(d.expenses)) {

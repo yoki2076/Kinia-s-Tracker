@@ -795,7 +795,7 @@ window.addEventListener('tripapp:ready', function(e) {
   };
 
   window._fb.fsGet(DOC).then(function(snap) {
-    if (snap.exists()) {
+    if (snap.exists) {
       var d = snap.data();
       if (d.S) {
         // ✅ 直接覆蓋，不用 Object.assign merge（避免本地假資料污染雲端資料）

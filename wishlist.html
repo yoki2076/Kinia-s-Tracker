@@ -1535,14 +1535,14 @@ window.addEventListener('tripapp:ready', function(e) {
     var wSnap = results[0], pSnap = results[1];
 
     // ✅ 用 _setState() 直接更新模組記憶體，並同步到 localStorage
-    if (wSnap.exists()) {
+    if (wSnap.exists) {
       W._setState(wSnap.data());
     } else {
       // 第一次使用：上傳目前的初始資料
       window._fbSave();
     }
 
-    if (pSnap.exists()) {
+    if (pSnap.exists) {
       P._setState(pSnap.data());
     } else {
       window._fbSavePlaces();

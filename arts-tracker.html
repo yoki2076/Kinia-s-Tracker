@@ -422,7 +422,7 @@ window.addEventListener('tripapp:ready', function(e) {
   };
 
   window._fb.fsGet(DOC).then(function(snap) {
-    if (snap.exists()) {
+    if (snap.exists) {
       var d = snap.data();
       if (d.data) {
         // 新格式：JSON 字串 ✅ 直接用雲端資料，不碰 localStorage
